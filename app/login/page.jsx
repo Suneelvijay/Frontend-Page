@@ -11,7 +11,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Sign in to your account</CardTitle>
           <CardDescription className="text-center">
-            Enter your username and password to continue
+            Enter your username and password to access the dealer management system
           </CardDescription>
         </CardHeader>
         <CardContent>
