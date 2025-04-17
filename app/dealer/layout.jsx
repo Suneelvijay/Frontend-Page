@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Car, FileText, Calendar, Settings, LogOut, Menu, X, User, Bell, MessageSquare } from "lucide-react"
+import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -20,7 +20,6 @@ const navItems = [
   { name: "Test Drive Requests", href: "/dealer/test-drives", icon: Car },
   { name: "Quote Requests", href: "/dealer/quotes", icon: FileText },
   { name: "Schedule", href: "/dealer/schedule", icon: Calendar },
-  { name: "Settings", href: "/dealer/settings", icon: Settings },
 ]
 
 export default function DealerLayout({ children }) {
@@ -190,10 +189,6 @@ export default function DealerLayout({ children }) {
                   <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
