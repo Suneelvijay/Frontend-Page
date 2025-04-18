@@ -6,10 +6,17 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Calendar, Car, Calculator, FileText } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { vehiclesAPI } from "@/lib/api"
+import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
+
 
 export default function LandingPage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [vehicles, setVehicles] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const { isAuthenticated } = useAuth()
 
   // Effect to handle window resize and initial mobile check
   useEffect(() => {
@@ -27,15 +34,31 @@ export default function LandingPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Sample vehicle data
-  const vehicles = [
-    { id: 1, name: "Kia Seltos", image: "/vehicle1.png?height=200&width=300", price: "₹10.89 - 19.65 Lakh" },
-    { id: 2, name: "Kia Sonet", image: "/vehicle2.png?height=200&width=300", price: "₹7.79 - 14.89 Lakh" },
-    { id: 3, name: "Kia Carens", image: "/vehicle3.png?height=200&width=300", price: "₹10.45 - 19.45 Lakh" },
-    { id: 4, name: "Kia EV6", image: "/vehicle4.png?height=200&width=300", price: "₹60.95 - 65.95 Lakh" },
-    { id: 5, name: "Kia Carnival", image: "/vehicle5.png?height=200&width=300", price: "₹24.95 - 33.99 Lakh" },
-    { id: 6, name: "Kia Sportage", image: "/vehicle6.png?height=200&width=300", price: "₹25.95 - 30.95 Lakh" },
-  ]
+  // Fetch vehicles from API
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        setIsLoading(true)
+        const data = await vehiclesAPI.getAllVehicles()
+        setVehicles(data)
+      } catch (error) {
+        console.error("Failed to fetch vehicles:", error)
+        // Fallback to sample data if API fails
+        setVehicles([
+          { id: 1, name: "Kia Seltos", image: "/vehicle1.png?height=200&width=300", price: "₹10.89 - 19.65 Lakh" },
+          { id: 2, name: "Kia Sonet", image: "/vehicle2.png?height=200&width=300", price: "₹7.79 - 14.89 Lakh" },
+          { id: 3, name: "Kia Carens", image: "/vehicle3.png?height=200&width=300", price: "₹10.45 - 19.45 Lakh" },
+          { id: 4, name: "Kia EV6", image: "/vehicle4.png?height=200&width=300", price: "₹60.95 - 65.95 Lakh" },
+          { id: 5, name: "Kia Carnival", image: "/vehicle5.png?height=200&width=300", price: "₹24.95 - 33.99 Lakh" },
+          { id: 6, name: "Kia Sportage", image: "/vehicle6.png?height=200&width=300", price: "₹25.95 - 30.95 Lakh" },
+        ])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchVehicles()
+  }, [])
 
   const totalSlides = Math.ceil(vehicles.length / 3)
 
@@ -59,10 +82,27 @@ export default function LandingPage() {
     })
   }
 
-  const handleActionButtonClick = (action) => {
-    // In a real application, this would check if user is logged in
-    // and redirect to the appropriate form or login page
-    alert(`Please log in to ${action}`)
+  const handleActionButtonClick = async (action, vehicleId) => {
+    if (!isAuthenticated) {
+      // If not logged in, redirect to login
+      toast.info("Please log in to continue")
+      // Could use router.push here, but using a simple redirect for now
+      window.location.href = "/login"
+      return
+    }
+
+    try {
+      if (action === "demo") {
+        // Navigate to the demo ride request form
+        window.location.href = `/demo-ride?vehicleId=${vehicleId}`
+      } else if (action === "quote") {
+        // Navigate to the quote request form
+        window.location.href = `/request-quote?vehicleId=${vehicleId}`
+      }
+    } catch (error) {
+      console.error(`Failed to ${action}:`, error)
+      toast.error(`Failed to process your request. Please try again.`)
+    }
   }
 
   return (
@@ -139,47 +179,65 @@ export default function LandingPage() {
 
             <div className="relative">
               <div className="overflow-hidden">
-                <div
+              <div
                   className="flex transition-transform duration-500 ease-in-out"
                   style={{ 
                     transform: `translateX(-${currentSlide * (isMobile ? 100 : 33.333)}%)` 
                   }}
                 >
-                  {vehicles.map((vehicle) => (
-                    <div key={vehicle.id} className="min-w-full md:min-w-[33.333%] px-2">
-                      <Card className="w-full flex flex-col">
-                        <div className="relative h-[200px]">
-                          <Image
-                            src={vehicle.image || "/placeholder.svg"}
-                            alt={vehicle.name}
-                            fill
-                            className="object-cover rounded-t-lg"
-                          />
+                  {isLoading ? (
+                      Array(3).fill(0).map((_, index) => (
+                        <div key={index} className="min-w-full md:min-w-[33.333%] px-2">
+                          <Card className="w-full flex flex-col">
+                            <div className="relative h-[200px] bg-gray-200 animate-pulse rounded-t-lg"></div>
+                            <CardContent className="flex flex-col flex-grow p-4">
+                              <div className="h-6 bg-gray-200 animate-pulse rounded mb-1"></div>
+                              <div className="h-4 bg-gray-200 animate-pulse rounded mb-4 w-2/3"></div>
+                              <div className="mt-auto flex flex-col sm:flex-row gap-2">
+                                <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
+                                <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
+                              </div>
+                            </CardContent>
+                          </Card>
                         </div>
-                        <CardContent className="flex flex-col flex-grow p-4">
-                          <h3 className="text-xl font-bold mb-1">{vehicle.name}</h3>
-                          <p className="text-muted-foreground mb-4">{vehicle.price}</p>
-                          <div className="mt-auto flex flex-col sm:flex-row gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => handleActionButtonClick("request a demo ride")}
-                            >
-                              Request Demo Ride
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 bg-[#BB162B] hover:bg-[#A01020]"
-                              onClick={() => handleActionButtonClick("get a quote")}
-                            >
-                              Get Quote
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ))}
+                      ))
+                    ) : (
+                      vehicles.map((vehicle) => (
+                        <div key={vehicle.id} className="min-w-full md:min-w-[33.333%] px-2">
+                          <Card className="w-full flex flex-col">
+                            <div className="relative h-[200px]">
+                              <Image
+                                src={vehicle.image || "/placeholder.svg"}
+                                alt={vehicle.name}
+                                fill
+                                className="object-cover rounded-t-lg"
+                              />
+                            </div>
+                            <CardContent className="flex flex-col flex-grow p-4">
+                              <h3 className="text-xl font-bold mb-1">{vehicle.name}</h3>
+                              <p className="text-muted-foreground mb-4">{vehicle.price}</p>
+                              <div className="mt-auto flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleActionButtonClick("demo", vehicle.id)}
+                                >
+                                  Request Demo Ride
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="flex-1 bg-[#BB162B] hover:bg-[#A01020]"
+                                  onClick={() => handleActionButtonClick("quote", vehicle.id)}
+                                >
+                                  Get Quote
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      ))
+                  )}
                 </div>
               </div>
 

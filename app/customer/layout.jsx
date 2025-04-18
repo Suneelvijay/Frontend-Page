@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, Car, FileSpreadsheet, Users, LogOut, Menu, X, User, Bell } from "lucide-react"
+import { Home, Car, FileText, User, LogOut, Bell, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -17,13 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const navItems = [
-  { name: "Dashboard", href: "/admin", icon: BarChart3 },
-  { name: "User Management", href: "/admin/users", icon: Users },
-  { name: "Vehicle Management", href: "/admin/vehicles", icon: Car },
-  { name: "Reports", href: "/admin/reports", icon: FileSpreadsheet },
+  { name: "Dashboard", href: "/customer/dashboard", icon: Home },
+  { name: "Vehicles", href: "/customer/vehicles", icon: Car },
+  { name: "Test Drives", href: "/customer/test-drives", icon: Car },
+  { name: "Quote Requests", href: "/customer/quotes", icon: FileText },
+  { name: "Profile", href: "/customer/profile", icon: User },
 ]
 
-export default function AdminLayout({ children }) {
+export default function CustomerLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -123,7 +124,7 @@ export default function AdminLayout({ children }) {
           </button>
           <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1">
-              <h1 className="text-2xl font-semibold text-gray-900 self-center">Kia Admin Panel</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 self-center">Kia Customer Portal</h1>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4">
               <DropdownMenu>
@@ -140,21 +141,21 @@ export default function AdminLayout({ children }) {
                   <DropdownMenuSeparator />
                   <div className="max-h-80 overflow-auto">
                     <div className="flex items-start gap-4 p-3 hover:bg-muted/50 rounded-md">
-                      <Users className="h-5 w-5 mt-1 text-blue-500" />
+                      <Car className="h-5 w-5 mt-1 text-blue-500" />
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">New Dealer Registration</p>
+                        <p className="text-sm font-medium">Test Drive Confirmed</p>
                         <p className="text-xs text-muted-foreground">
-                          New dealer account "Delhi Motors" awaiting approval
+                          Your test drive for Kia Seltos has been confirmed for tomorrow
                         </p>
-                        <p className="text-xs text-muted-foreground">1 hour ago</p>
+                        <p className="text-xs text-muted-foreground">30 minutes ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 p-3 hover:bg-muted/50 rounded-md">
-                      <Car className="h-5 w-5 mt-1 text-green-500" />
+                      <FileText className="h-5 w-5 mt-1 text-green-500" />
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">Vehicle Database Update</p>
-                        <p className="text-xs text-muted-foreground">Vehicle database update completed successfully</p>
-                        <p className="text-xs text-muted-foreground">3 hours ago</p>
+                        <p className="text-sm font-medium">Quote Ready</p>
+                        <p className="text-xs text-muted-foreground">Your quote for Kia Sonet is ready to view</p>
+                        <p className="text-xs text-muted-foreground">2 hours ago</p>
                       </div>
                     </div>
                   </div>
@@ -171,16 +172,16 @@ export default function AdminLayout({ children }) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Admin" />
-                      <AvatarFallback>AD</AvatarFallback>
+                      <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Customer" />
+                      <AvatarFallback>CU</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Admin Name</p>
-                      <p className="text-xs leading-none text-muted-foreground">admin@kia.com</p>
+                      <p className="text-sm font-medium leading-none">Customer Name</p>
+                      <p className="text-xs leading-none text-muted-foreground">customer@example.com</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

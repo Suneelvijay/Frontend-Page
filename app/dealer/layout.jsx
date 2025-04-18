@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { handleLogout } from "@/lib/auth-utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,7 +25,14 @@ const navItems = [
 
 export default function DealerLayout({ children }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  const onLogout = async () => {
+    await handleLogout(() => {
+      router.push("/login")
+    })
+  }
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -191,7 +199,7 @@ export default function DealerLayout({ children }) {
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={onLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
