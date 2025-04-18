@@ -30,7 +30,7 @@ export default function AdminLayout({ children }) {
   
   const onLogout = async () => {
     await handleLogout(() => {
-      router.push("/login")
+      router.push("/")
     })
   }
 

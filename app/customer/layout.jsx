@@ -31,7 +31,7 @@ export default function CustomerLayout({ children }) {
   
   const onLogout = async () => {
     await handleLogout(() => {
-      router.push("/login")
+      router.push("/")
     })
   }
 
