@@ -1,306 +1,363 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { ArrowLeft, Loader2, Search, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react"
+import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-// Mock data for vehicles
-const mockVehicles = [
-  {
-    id: 1,
-    name: "Kia Seltos",
-    category: "SUV",
-    price: 1099000,
-    fuelType: "Petrol",
-    transmission: "Automatic",
-    image: "/placeholder.svg?height=200&width=300",
-    description: "The bold and dynamic Kia Seltos combines stunning design with cutting-edge technology.",
-  },
-  {
-    id: 2,
-    name: "Kia Sonet",
-    category: "SUV",
-    price: 779000,
-    fuelType: "Diesel",
-    transmission: "Manual",
-    image: "/placeholder.svg?height=200&width=300",
-    description: "The Kia Sonet is a compact SUV designed to deliver a thrilling driving experience.",
-  },
-  {
-    id: 3,
-    name: "Kia Carnival",
-    category: "MPV",
-    price: 2499000,
-    fuelType: "Diesel",
-    transmission: "Automatic",
-    image: "/placeholder.svg?height=200&width=300",
-    description: "The Kia Carnival redefines luxury with its spacious interior and premium features.",
-  },
-  {
-    id: 4,
-    name: "Kia EV6",
-    category: "Electric",
-    price: 6095000,
-    fuelType: "Electric",
-    transmission: "Automatic",
-    image: "/placeholder.svg?height=200&width=300",
-    description: "The Kia EV6 is an all-electric crossover with futuristic design and impressive range.",
-  },
-  {
-    id: 5,
-    name: "Kia Carens",
-    category: "MPV",
-    price: 1045000,
-    fuelType: "Petrol",
-    transmission: "Manual",
-    image: "/placeholder.svg?height=200&width=300",
-    description: "The Kia Carens is a versatile family car with three rows of seating and modern features.",
-  },
-]
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = useState(mockVehicles)
-  const [filters, setFilters] = useState({
-    category: "",
-    fuelType: "",
-    transmission: "",
-    priceRange: [0, 7000000],
-  })
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [vehicles, setVehicles] = useState([])
+  const [filteredVehicles, setFilteredVehicles] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [filters, setFilters] = useState({
+    type: "ALL",
+    fuelType: "ALL",
+    priceRange: [0, 10000000],
+  })
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 5,
+    totalPages: 1,
+    totalElements: 0
+  })
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
-  // Apply filters
   useEffect(() => {
-    const filteredVehicles = mockVehicles.filter((vehicle) => {
-      return (
-        (filters.category === "" || vehicle.category === filters.category) &&
-        (filters.fuelType === "" || vehicle.fuelType === filters.fuelType) &&
-        (filters.transmission === "" || vehicle.transmission === filters.transmission) &&
-        vehicle.price >= filters.priceRange[0] &&
-        vehicle.price <= filters.priceRange[1] &&
-        (searchQuery === "" || vehicle.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    const fetchVehicles = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
+
+        const response = await fetch("http://localhost:8080/api/vehicles/list", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            page: pagination.page,
+            size: pagination.size
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch vehicles")
+        }
+
+        const data = await response.json()
+        setVehicles(data.content)
+        setFilteredVehicles(data.content)
+        setPagination(prev => ({
+          ...prev,
+          totalPages: data.totalPages,
+          totalElements: data.totalElements
+        }))
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching vehicles:", error)
+        toast.error(error.message || "Failed to load vehicles")
+        setLoading(false)
+      }
+    }
+
+    fetchVehicles()
+  }, [pagination.page, pagination.size])
+
+  useEffect(() => {
+    let filtered = [...vehicles]
+
+    // Apply type filter
+    if (filters.type !== "ALL") {
+      filtered = filtered.filter(vehicle => vehicle.type === filters.type)
+    }
+
+    // Apply fuel type filter
+    if (filters.fuelType !== "ALL") {
+      filtered = filtered.filter(vehicle => vehicle.fuelType === filters.fuelType)
+    }
+
+    // Apply price range filter
+    filtered = filtered.filter(vehicle => 
+      vehicle.price >= filters.priceRange[0] && 
+      vehicle.price <= filters.priceRange[1]
+    )
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(vehicle => 
+        vehicle.name.toLowerCase().includes(query) ||
+        vehicle.description.toLowerCase().includes(query) ||
+        vehicle.fuelType.toLowerCase().includes(query)
       )
-    })
+    }
 
-    setVehicles(filteredVehicles)
-  }, [filters, searchQuery])
+    setFilteredVehicles(filtered)
+  }, [searchQuery, filters, vehicles])
 
-  // Format price to INR
+  const handlePageSizeChange = (size) => {
+    setPagination(prev => ({
+      ...prev,
+      size: parseInt(size),
+      page: 0
+    }))
+  }
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      page: newPage
+    }))
+  }
+
   const formatPrice = (price) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
     }).format(price)
   }
 
-  return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Kia Vehicles</h1>
-        <Link href="/customer/dashboard">
-          <Button variant="outline">Back to Dashboard</Button>
-        </Link>
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
       </div>
+    )
+  }
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Filters */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Filters</h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Search</label>
-                  <Input
-                    placeholder="Search vehicles..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Category</label>
-                  <Select
-                    value={filters.category}
-                    onValueChange={(value) => setFilters({ ...filters, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="SUV">SUV</SelectItem>
-                      <SelectItem value="MPV">MPV</SelectItem>
-                      <SelectItem value="Electric">Electric</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Fuel Type</label>
-                  <Select
-                    value={filters.fuelType}
-                    onValueChange={(value) => setFilters({ ...filters, fuelType: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Fuel Types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Fuel Types</SelectItem>
-                      <SelectItem value="Petrol">Petrol</SelectItem>
-                      <SelectItem value="Diesel">Diesel</SelectItem>
-                      <SelectItem value="Electric">Electric</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-1 block">Transmission</label>
-                  <Select
-                    value={filters.transmission}
-                    onValueChange={(value) => setFilters({ ...filters, transmission: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Transmissions" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Transmissions</SelectItem>
-                      <SelectItem value="Manual">Manual</SelectItem>
-                      <SelectItem value="Automatic">Automatic</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-1 block">
-                    Price Range: {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
-                  </label>
-                  <Slider
-                    defaultValue={[0, 7000000]}
-                    max={7000000}
-                    step={100000}
-                    value={filters.priceRange}
-                    onValueChange={(value) => setFilters({ ...filters, priceRange: value })}
-                    className="mt-2"
-                  />
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    setFilters({
-                      category: "all",
-                      fuelType: "all",
-                      transmission: "all",
-                      priceRange: [0, 7000000],
-                    })
-                    setSearchQuery("")
-                  }}
-                >
-                  Reset Filters
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+  return (
+    <div className="container mx-auto px-4 md:px-6">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm" onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold tracking-tight">Vehicles</h1>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <SlidersHorizontal className="h-4 w-4 mr-2" />
+            {sidebarOpen ? "Hide Filters" : "Show Filters"}
+          </Button>
         </div>
 
-        {/* Vehicle List */}
-        <div className="lg:col-span-3">
-          <Tabs defaultValue="grid">
-            <div className="flex justify-between items-center mb-4">
-              <TabsList>
-                <TabsTrigger value="grid">Grid View</TabsTrigger>
-                <TabsTrigger value="list">List View</TabsTrigger>
-              </TabsList>
-              <span className="text-sm text-muted-foreground">{vehicles.length} vehicles found</span>
-            </div>
-
-            <TabsContent value="grid" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {vehicles.map((vehicle) => (
-                  <Card key={vehicle.id} className="overflow-hidden">
-                    <Image
-                      src={vehicle.image || "/placeholder.svg"}
-                      alt={vehicle.name}
-                      width={300}
-                      height={200}
-                      className="w-full h-48 object-cover"
-                    />
-                    <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold">{vehicle.name}</h3>
-                      <p className="text-red-600 font-medium">{formatPrice(vehicle.price)}</p>
-                      <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
-                        <span>{vehicle.category}</span>
-                        <span>•</span>
-                        <span>{vehicle.fuelType}</span>
-                        <span>•</span>
-                        <span>{vehicle.transmission}</span>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0 flex gap-2">
-                      <Link href={`/customer/vehicles/${vehicle.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full">
-                          Details
-                        </Button>
-                      </Link>
-                      <Link href={`/customer/test-drives/book?vehicleId=${vehicle.id}`} className="flex-1">
-                        <Button className="w-full bg-red-600 hover:bg-red-700">Test Drive</Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="list" className="mt-0">
-              <div className="space-y-4">
-                {vehicles.map((vehicle) => (
-                  <Card key={vehicle.id} className="overflow-hidden">
-                    <div className="flex flex-col md:flex-row">
-                      <Image
-                        src={vehicle.image || "/placeholder.svg"}
-                        alt={vehicle.name}
-                        width={300}
-                        height={200}
-                        className="w-full md:w-64 h-48 object-cover"
-                      />
-                      <div className="flex-1 p-4">
-                        <h3 className="text-lg font-semibold">{vehicle.name}</h3>
-                        <p className="text-red-600 font-medium">{formatPrice(vehicle.price)}</p>
-                        <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
-                          <span>{vehicle.category}</span>
-                          <span>•</span>
-                          <span>{vehicle.fuelType}</span>
-                          <span>•</span>
-                          <span>{vehicle.transmission}</span>
-                        </div>
-                        <p className="mt-2 text-sm">{vehicle.description}</p>
-                        <div className="flex gap-2 mt-4">
-                          <Link href={`/customer/vehicles/${vehicle.id}`}>
-                            <Button variant="outline">Details</Button>
-                          </Link>
-                          <Link href={`/customer/test-drives/book?vehicleId=${vehicle.id}`}>
-                            <Button className="bg-red-600 hover:bg-red-700">Test Drive</Button>
-                          </Link>
-                          <Link href={`/customer/quotes/request?vehicleId=${vehicle.id}`}>
-                            <Button variant="outline">Request Quote</Button>
-                          </Link>
-                        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Filters Sidebar */}
+          {sidebarOpen && (
+            <div className="lg:col-span-1">
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Filters</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Search</label>
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search vehicles..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8"
+                        />
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Vehicle Type</label>
+                      <Select
+                        value={filters.type}
+                        onValueChange={(value) => setFilters({ ...filters, type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Types</SelectItem>
+                          <SelectItem value="SUV">SUV</SelectItem>
+                          <SelectItem value="SEDAN">Sedan</SelectItem>
+                          <SelectItem value="HATCHBACK">Hatchback</SelectItem>
+                          <SelectItem value="MPV">MPV</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Fuel Type</label>
+                      <Select
+                        value={filters.fuelType}
+                        onValueChange={(value) => setFilters({ ...filters, fuelType: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Fuel Types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">All Fuel Types</SelectItem>
+                          <SelectItem value="PETROL">Petrol</SelectItem>
+                          <SelectItem value="DIESEL">Diesel</SelectItem>
+                          <SelectItem value="ELECTRIC">Electric</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">
+                        Price Range: {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
+                      </label>
+                      <Slider
+                        defaultValue={[0, 10000000]}
+                        max={10000000}
+                        step={100000}
+                        value={filters.priceRange}
+                        onValueChange={(value) => setFilters({ ...filters, priceRange: value })}
+                        className="mt-2"
+                      />
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setFilters({
+                          type: "ALL",
+                          fuelType: "ALL",
+                          priceRange: [0, 10000000],
+                        })
+                        setSearchQuery("")
+                      }}
+                    >
+                      Reset Filters
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Vehicle Grid */}
+          <div className={`lg:col-span-${sidebarOpen ? '3' : '4'}`}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Available Vehicles</CardTitle>
+                <CardDescription>
+                  Browse through our collection of vehicles. Showing {filteredVehicles.length} of {pagination.totalElements} vehicles.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredVehicles.length === 0 ? (
+                    <div className="col-span-full text-center py-8">
+                      No vehicles found
+                    </div>
+                  ) : (
+                    filteredVehicles.map((vehicle) => (
+                      <Card key={vehicle.id} className="overflow-hidden">
+                        <div className="relative h-48 w-full">
+                          {vehicle.image ? (
+                            <img
+                              src={`data:image/jpeg;base64,${vehicle.image}`}
+                              alt={vehicle.name}
+                              className="object-cover w-full h-full"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400">No image available</span>
+                            </div>
+                          )}
+                        </div>
+                        <CardContent className="p-4">
+                          <h3 className="text-lg font-semibold">{vehicle.name}</h3>
+                          <p className="text-red-600 font-medium">{formatPrice(vehicle.price)}</p>
+                          <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
+                            <Badge variant="outline">{vehicle.type}</Badge>
+                            <span>•</span>
+                            <span>{vehicle.fuelType}</span>
+                          </div>
+                          <p className="mt-2 text-sm line-clamp-2">{vehicle.description}</p>
+                        </CardContent>
+                        <CardFooter className="p-4 pt-0 flex gap-2">
+                          <Link href={`/customer/vehicles/${vehicle.id}`} className="flex-1">
+                            <Button variant="outline" className="w-full">
+                              Details
+                            </Button>
+                          </Link>
+                          <Link href={`/customer/test-drives/book?vehicleId=${vehicle.id}`} className="flex-1">
+                            <Button className="w-full bg-red-600 hover:bg-red-700">Test Drive</Button>
+                          </Link>
+                        </CardFooter>
+                      </Card>
+                    ))
+                  )}
+                </div>
+
+                {pagination.totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {((pagination.page) * pagination.size) + 1} to {Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)} of {pagination.totalElements} vehicles
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Select value={pagination.size.toString()} onValueChange={handlePageSizeChange}>
+                        <SelectTrigger className="w-[100px]">
+                          <SelectValue placeholder="Items per page" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="20">20</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page - 1)}
+                        disabled={pagination.page === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <div className="text-sm">
+                        Page {pagination.page + 1} of {pagination.totalPages}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(pagination.page + 1)}
+                        disabled={pagination.page === pagination.totalPages - 1}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

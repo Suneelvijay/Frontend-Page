@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Car, FileText, User, LogOut, Bell, Menu, X } from "lucide-react"
+import { Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -17,20 +17,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 const navItems = [
-  { name: "Dashboard", href: "/customer/dashboard", icon: Home },
   { name: "Vehicles", href: "/customer/vehicles", icon: Car },
-  { name: "Test Drives", href: "/customer/test-drives", icon: Car },
-  { name: "Quote Requests", href: "/customer/quotes", icon: FileText },
-  { name: "Profile", href: "/customer/profile", icon: User },
+  { name: "Test Drives", href: "/customer/test-drives", icon: Calendar },
+  { name: "Quotes", href: "/customer/quotes", icon: FileText },
 ]
 
 export default function CustomerLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState({ username: "Customer", email: "customer@example.com" })
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [user, setUser] = useState({ username: "Customer Name", email: "customer@example.com" })
   
-  // Get user data on component mount
   useEffect(() => {
     const userData = localStorage.getItem("userData")
     if (userData) {
@@ -98,10 +96,18 @@ export default function CustomerLayout({ children }) {
       </div>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
+      <div className={`hidden md:flex md:flex-col transition-all duration-300 ease-in-out ${
+        sidebarCollapsed ? "md:w-20" : "md:w-64"
+      }`}>
         <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
           <div className="flex flex-shrink-0 items-center px-4">
-            <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+            <img 
+              src="/kialogo-removebg.png?height=40&width=80" 
+              alt="Kia Logo" 
+              className={`transition-all duration-300 ease-in-out ${
+                sidebarCollapsed ? "h-6 w-auto mx-auto" : "h-8 w-auto"
+              }`} 
+            />
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2 pb-4">
@@ -116,20 +122,39 @@ export default function CustomerLayout({ children }) {
                     }`}
                   >
                     <item.icon
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      className={`flex-shrink-0 ${
+                        sidebarCollapsed ? "h-5 w-5 mx-auto" : "mr-3 h-5 w-5"
+                      } ${
                         isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
                       }`}
                     />
-                    {item.name}
+                    {!sidebarCollapsed && <span>{item.name}</span>}
                   </Link>
                 )
               })}
             </nav>
+            <div className="px-2 pb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-5 w-5" />
+                ) : (
+                  <>
+                    <ChevronLeft className="mr-2 h-5 w-5" />
+                    <span>Collapse Sidebar</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col md:pl-64">
+      <div className="flex flex-1 flex-col md:pl-0">
         <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
           <button
             type="button"
@@ -140,8 +165,15 @@ export default function CustomerLayout({ children }) {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex flex-1 justify-between px-4">
-            <div className="flex flex-1">
-              <h1 className="text-2xl font-semibold text-gray-900 self-center">Kia Customer Portal</h1>
+            <div className="flex flex-1 items-center">
+              {sidebarCollapsed && (
+                <div className="flex-1 flex justify-center">
+                  <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+                </div>
+              )}
+              {!sidebarCollapsed && (
+                <h1 className="text-2xl font-semibold text-gray-900">Kia Customer Portal</h1>
+              )}
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4">
               <DropdownMenu>
@@ -149,7 +181,7 @@ export default function CustomerLayout({ children }) {
                   <Button variant="ghost" size="icon" className="relative">
                     <Bell className="h-5 w-5" />
                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-                      2
+                      3
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -160,19 +192,19 @@ export default function CustomerLayout({ children }) {
                     <div className="flex items-start gap-4 p-3 hover:bg-muted/50 rounded-md">
                       <Car className="h-5 w-5 mt-1 text-blue-500" />
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">Test Drive Confirmed</p>
+                        <p className="text-sm font-medium">Test Drive Scheduled</p>
                         <p className="text-xs text-muted-foreground">
-                          Your test drive for Kia Seltos has been confirmed for tomorrow
+                          Your test drive for Kia Seltos is scheduled for tomorrow
                         </p>
-                        <p className="text-xs text-muted-foreground">30 minutes ago</p>
+                        <p className="text-xs text-muted-foreground">10 minutes ago</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-4 p-3 hover:bg-muted/50 rounded-md">
-                      <FileText className="h-5 w-5 mt-1 text-green-500" />
+                      <MessageSquare className="h-5 w-5 mt-1 text-green-500" />
                       <div className="space-y-1">
-                        <p className="text-sm font-medium">Quote Ready</p>
-                        <p className="text-xs text-muted-foreground">Your quote for Kia Sonet is ready to view</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
+                        <p className="text-sm font-medium">Quote Received</p>
+                        <p className="text-xs text-muted-foreground">Your quote for Kia Sonet is ready</p>
+                        <p className="text-xs text-muted-foreground">1 hour ago</p>
                       </div>
                     </div>
                   </div>
@@ -190,7 +222,7 @@ export default function CustomerLayout({ children }) {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder.svg?height=32&width=32" alt="Customer" />
-                      <AvatarFallback>{user.username.charAt(0)}{user.username.split(' ')[1]?.charAt(0) || ''}</AvatarFallback>
+                      <AvatarFallback>CU</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -203,10 +235,8 @@ export default function CustomerLayout({ children }) {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Link href="/customer/profile" className="flex w-full items-center">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </Link>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onLogout}>
