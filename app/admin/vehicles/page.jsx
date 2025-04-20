@@ -97,7 +97,7 @@ export default function VehiclesPage() {
         return
       }
       
-      const response = await fetch(`http://localhost:8080/api/vehicles/${vehicleId}`, {
+      const response = await fetch(`http://localhost:8080/api/admin/vehicles/${vehicleId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -230,6 +230,10 @@ export default function VehiclesPage() {
                                 src={`data:image/jpeg;base64,${vehicle.image}`}
                                 alt={vehicle.name}
                                 className="h-10 w-16 rounded object-cover"
+                                onError={(e) => {
+                                  e.target.onerror = null; // Prevent infinite loop
+                                  e.target.src = "/placeholder.svg"; // Use SVG placeholder
+                                }}
                               />
                             ) : (
                               <img

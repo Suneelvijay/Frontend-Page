@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare } from "lucide-react"
@@ -27,6 +27,23 @@ export default function DealerLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState({ username: "Dealer Name", email: "dealer@kia.com" })
+  
+  // Get user data on component mount
+  useEffect(() => {
+    const userData = localStorage.getItem("userData")
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData)
+        setUser({
+          username: parsedUser.username || parsedUser.fullName || parsedUser.dealershipName || "Dealer",
+          email: parsedUser.email || "dealer@kia.com"
+        })
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+      }
+    }
+  }, [])
   
   const onLogout = async () => {
     await handleLogout(() => {
@@ -189,8 +206,8 @@ export default function DealerLayout({ children }) {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Dealer Name</p>
-                      <p className="text-xs leading-none text-muted-foreground">dealer@kia.com</p>
+                      <p className="text-sm font-medium leading-none">{user.username}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />

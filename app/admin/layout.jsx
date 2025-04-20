@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { BarChart3, Car, FileSpreadsheet, Users, LogOut, Menu, X, User, Bell } from "lucide-react"
@@ -27,6 +27,23 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [user, setUser] = useState({ username: "Admin", email: "admin@kia.com" })
+  
+  // Get user data on component mount
+  useEffect(() => {
+    const userData = localStorage.getItem("userData")
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(userData)
+        setUser({
+          username: parsedUser.username || parsedUser.fullName || "Admin",
+          email: parsedUser.email || "admin@kia.com"
+        })
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+      }
+    }
+  }, [])
   
   const onLogout = async () => {
     await handleLogout(() => {
@@ -179,8 +196,8 @@ export default function AdminLayout({ children }) {
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">Admin Name</p>
-                      <p className="text-xs leading-none text-muted-foreground">admin@kia.com</p>
+                      <p className="text-sm font-medium leading-none">{user.username}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
