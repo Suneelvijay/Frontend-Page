@@ -367,6 +367,19 @@ export default function UsersPage() {
     }
   }
 
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case "APPROVED":
+        return "success"
+      case "REJECTED":
+        return "destructive"
+      case "PENDING":
+        return "warning"
+      default:
+        return "secondary"
+    }
+  }
+
   const handleApproveRequest = async (requestId) => {
     try {
       const token = localStorage.getItem("authToken")
@@ -385,15 +398,30 @@ export default function UsersPage() {
         })
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to approve request")
+      const result = await response.json().catch(() => null)
+      
+      if (result?.status === "APPROVED" || response.ok) {
+        toast.success("Request approved successfully")
+        setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
+        
+        if (activeTab === "history") {
+          const historyResponse = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          })
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json()
+            setRequestHistory(historyData)
+          }
+        }
+      } else {
+        throw new Error(result?.message || "Failed to approve request")
       }
-
-      toast.success("Request approved successfully")
-      setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
     } catch (error) {
       console.error("Approve error:", error)
-      toast.error(error.message || "Failed to approve request")
+      toast.error(error.message || "Error occurred while approving request")
     }
   }
 
@@ -415,15 +443,30 @@ export default function UsersPage() {
         })
       })
 
-      if (!response.ok) {
-        throw new Error("Failed to deny request")
+      const result = await response.json().catch(() => null)
+      
+      if (result?.status === "REJECTED" || response.ok) {
+        toast.success("Request denied successfully")
+        setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
+        
+        if (activeTab === "history") {
+          const historyResponse = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          })
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json()
+            setRequestHistory(historyData)
+          }
+        }
+      } else {
+        throw new Error(result?.message || "Failed to deny request")
       }
-
-      toast.success("Request denied successfully")
-      setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
     } catch (error) {
       console.error("Deny error:", error)
-      toast.error(error.message || "Failed to deny request")
+      toast.error(error.message || "Error occurred while denying request")
     }
   }
 
@@ -435,17 +478,6 @@ export default function UsersPage() {
         return "secondary"
       case "CUSTOMER":
         return "outline"
-      default:
-        return "outline"
-    }
-  }
-
-  const getStatusBadgeVariant = (status) => {
-    switch (status) {
-      case "ACTIVE":
-        return "success"
-      case "INACTIVE":
-        return "destructive"
       default:
         return "outline"
     }
@@ -662,7 +694,7 @@ export default function UsersPage() {
                                         }}
                                       >
                                         <Shield className="h-4 w-4" />
-                                      </Button>
+                                    </Button>
                                       <AlertDialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
                                         <AlertDialogContent>
                                           <AlertDialogHeader>
@@ -762,18 +794,18 @@ export default function UsersPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
                         <TableHead>User</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Current Role</TableHead>
-                        <TableHead>Request Date</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                       {pendingRequests.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center">
@@ -782,15 +814,19 @@ export default function UsersPage() {
                         </TableRow>
                       ) : (
                         pendingRequests.map((request) => (
-                          <TableRow key={request.id}>
+                            <TableRow key={request.id}>
                             <TableCell>{request.user.fullName}</TableCell>
                             <TableCell>{request.user.email}</TableCell>
-                            <TableCell>
+                              <TableCell>
                               <Badge variant={getRoleBadgeVariant(request.user.role)}>
                                 {request.user.role}
                               </Badge>
-                            </TableCell>
-                            <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                              </TableCell>
+                              <TableCell>
+                              <Badge variant={getStatusBadgeVariant(request.status)}>
+                                {request.status}
+                              </Badge>
+                              </TableCell>
                             <TableCell>
                               <div className="flex space-x-2">
                                 <Button
@@ -808,15 +844,15 @@ export default function UsersPage() {
                                   className="text-red-600 hover:text-red-700"
                                 >
                                   <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
                         ))
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
+                        </TableBody>
+                      </Table>
+                    </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -854,7 +890,7 @@ export default function UsersPage() {
                             <TableCell>{request.user.fullName}</TableCell>
                             <TableCell>{request.user.email}</TableCell>
                             <TableCell>
-                              <Badge variant={request.status === "APPROVED" ? "success" : "destructive"}>
+                              <Badge variant={getStatusBadgeVariant(request.status)}>
                                 {request.status}
                               </Badge>
                             </TableCell>

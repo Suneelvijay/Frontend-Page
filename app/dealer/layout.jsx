@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare } from "lucide-react"
+import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -21,6 +21,11 @@ const navItems = [
   { name: "Test Drive Requests", href: "/dealer/test-drives", icon: Car },
   { name: "Quote Requests", href: "/dealer/quotes", icon: FileText },
   { name: "Schedule", href: "/dealer/schedule", icon: Calendar },
+  {
+    name: "Admin Requests",
+    href: "/dealer/admin-requests",
+    icon: Shield
+  },
 ]
 
 export default function DealerLayout({ children }) {
