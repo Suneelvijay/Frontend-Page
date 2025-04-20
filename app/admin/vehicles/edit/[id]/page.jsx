@@ -2,63 +2,102 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Upload } from "lucide-react"
-
-// Sample vehicle data
-const vehicles = [
-  {
-    id: "1",
-    name: "Kia Seltos",
-    description: "Compact SUV with advanced features",
-    fuelType: "Petrol",
-    color: "White",
-    price: "989000",
-    image: "/placeholder.svg?height=80&width=120",
-  },
-  {
-    id: "2",
-    name: "Kia Sonet",
-    description: "Subcompact SUV with premium features",
-    fuelType: "Diesel",
-    color: "Red",
-    price: "779000",
-    image: "/placeholder.svg?height=80&width=120",
-  },
-]
+import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ArrowLeft, Loader2, X } from "lucide-react"
+import { toast } from "sonner"
+import Image from "next/image"
 
 export default function EditVehiclePage({ params }) {
-  const { id } = params
-  const [vehicle, setVehicle] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const router = useRouter()
+  const vehicleId = params.id
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [vehicle, setVehicle] = useState(null)
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    fuelType: "",
+    color: "",
+    price: "",
+    type: "SUV"
+  })
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState(null)
 
   useEffect(() => {
-    // Simulate API call to fetch vehicle data
-    const fetchVehicle = () => {
-      setLoading(true)
-      // Find vehicle by ID from our sample data
-      const foundVehicle = vehicles.find((v) => v.id === id)
+    const fetchVehicle = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
 
-      if (foundVehicle) {
-        setVehicle(foundVehicle)
-        setImagePreview(foundVehicle.image)
+        const response = await fetch(`http://localhost:8080/api/vehicles/${vehicleId}`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch vehicle")
+        }
+
+        const data = await response.json()
+        setVehicle(data)
+        setFormData({
+          name: data.name || "",
+          description: data.description || "",
+          fuelType: data.fuelType || "",
+          color: data.color || "",
+          price: data.price || "",
+          type: data.type || "SUV"
+        })
+        if (data.image) {
+          setImagePreview(data.image)
+        }
+      } catch (error) {
+        console.error("Error fetching vehicle:", error)
+        toast.error(error.message || "Failed to load vehicle")
+      } finally {
+        setLoading(false)
       }
-
-      setLoading(false)
     }
 
     fetchVehicle()
-  }, [id])
+  }, [vehicleId])
+
+  const handleInputChange = (e) => {
+    const { id, value } = e.target
+    setFormData({
+      ...formData,
+      [id]: value
+    })
+  }
+
+  const handleSelectChange = (id, value) => {
+    setFormData({
+      ...formData,
+      [id]: value
+    })
+  }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("Image size should be less than 2MB")
+        return
+      }
+      
+      setImageFile(file)
+      
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result)
@@ -67,11 +106,61 @@ export default function EditVehiclePage({ params }) {
     }
   }
 
+  const removeImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const formDataToSend = new FormData()
+      formDataToSend.append("id", vehicleId)
+      formDataToSend.append("name", formData.name)
+      formDataToSend.append("description", formData.description)
+      formDataToSend.append("fuelType", formData.fuelType)
+      formDataToSend.append("color", formData.color)
+      formDataToSend.append("price", formData.price)
+      formDataToSend.append("type", formData.type)
+      
+      if (imageFile) {
+        formDataToSend.append("image", imageFile)
+      }
+
+      const response = await fetch(`http://localhost:8080/api/admin/vehicles/${vehicleId}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formDataToSend
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update vehicle")
+      }
+
+      toast.success("Vehicle updated successfully")
+      router.push(`/admin/vehicles/${vehicleId}`)
+    } catch (error) {
+      console.error("Update error:", error)
+      toast.error(error.message || "Failed to update vehicle")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 md:px-6 py-8">
         <div className="flex justify-center">
-          <p>Loading vehicle data...</p>
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </div>
     )
@@ -91,10 +180,10 @@ export default function EditVehiclePage({ params }) {
     <div className="container mx-auto px-4 md:px-6">
       <div className="flex flex-col space-y-4">
         <div className="flex items-center space-x-2">
-          <Link href="/admin/vehicles">
+          <Link href={`/admin/vehicles/${vehicleId}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Vehicles
+              Back to Vehicle
             </Button>
           </Link>
           <h1 className="text-2xl font-bold tracking-tight">Edit Vehicle</h1>
@@ -106,78 +195,134 @@ export default function EditVehiclePage({ params }) {
             <CardDescription>Update the details of {vehicle.name}.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Vehicle Name</Label>
-                  <Input id="name" defaultValue={vehicle.name} required />
+                  <Input 
+                    id="name" 
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="price">Price (₹)</Label>
-                  <Input id="price" defaultValue={vehicle.price} type="number" required />
+                  <Input 
+                    id="price" 
+                    type="number" 
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" defaultValue={vehicle.description} className="min-h-[100px]" required />
+                <Textarea 
+                  id="description" 
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="min-h-[100px]" 
+                  required 
+                />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="fuelType">Fuel Type</Label>
-                  <Select defaultValue={vehicle.fuelType.toLowerCase()}>
+                  <Select 
+                    value={formData.fuelType}
+                    onValueChange={(value) => handleSelectChange("fuelType", value)}
+                  >
                     <SelectTrigger id="fuelType">
-                      <SelectValue />
+                      <SelectValue placeholder="Select fuel type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="petrol">Petrol</SelectItem>
-                      <SelectItem value="diesel">Diesel</SelectItem>
-                      <SelectItem value="electric">Electric</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                      <SelectItem value="PETROL">Petrol</SelectItem>
+                      <SelectItem value="DIESEL">Diesel</SelectItem>
+                      <SelectItem value="ELECTRIC">Electric</SelectItem>
+                      <SelectItem value="HYBRID">Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="color">Color</Label>
-                  <Input id="color" defaultValue={vehicle.color} required />
+                  <Input 
+                    id="color" 
+                    value={formData.color}
+                    onChange={handleInputChange}
+                    required 
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="type">Vehicle Type</Label>
+                <Select 
+                  value={formData.type}
+                  onValueChange={(value) => handleSelectChange("type", value)}
+                >
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="Select vehicle type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SUV">SUV</SelectItem>
+                    <SelectItem value="SEDAN">Sedan</SelectItem>
+                    <SelectItem value="HATCHBACK">Hatchback</SelectItem>
+                    <SelectItem value="ELECTRIC">Electric</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="image">Vehicle Image</Label>
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center justify-center w-full">
-                    <label
-                      htmlFor="image"
-                      className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
-                    >
-                      {imagePreview ? (
-                        <img
-                          src={imagePreview || "/placeholder.svg"}
-                          alt="Vehicle Preview"
-                          className="h-full object-contain"
-                        />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 mb-4 text-gray-500" />
-                          <p className="mb-2 text-sm text-gray-500">
-                            <span className="font-semibold">Click to upload</span> or drag and drop
-                          </p>
-                          <p className="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 2MB)</p>
-                        </div>
-                      )}
-                      <input id="image" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                    </label>
+                <div className="flex flex-col space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <Input 
+                      id="image" 
+                      type="file" 
+                      accept="image/*"
+                      onChange={handleImageChange}
+                    />
+                    {imagePreview && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={removeImage}
+                      >
+                        <X className="h-4 w-4" />
+                        Remove
+                      </Button>
+                    )}
                   </div>
+                  {imagePreview && (
+                    <div className="relative aspect-video w-full max-w-md overflow-hidden rounded-lg">
+                      <img
+                        src={typeof imagePreview === 'string' && imagePreview.startsWith('data:') 
+                          ? imagePreview 
+                          : `data:image/jpeg;base64,${imagePreview}`}
+                        alt="Vehicle preview"
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
+
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Vehicle"
+                )}
+              </Button>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline">Cancel</Button>
-            <Button>Update Vehicle</Button>
-          </CardFooter>
         </Card>
       </div>
     </div>

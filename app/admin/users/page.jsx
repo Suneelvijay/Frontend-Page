@@ -1,20 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { ArrowLeft, Loader2, Trash2, UserPlus, Shield, ShieldAlert, Search, Check, X, History } from "lucide-react"
+import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -24,112 +18,475 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Search, MoreHorizontal, UserPlus, Shield, ShieldAlert, Trash, UserCog, Clock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// Sample user data
-const users = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "customer",
-    status: "active",
-    joinedDate: "2023-01-15",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 2,
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "customer",
-    status: "active",
-    joinedDate: "2023-02-20",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 3,
-    name: "Robert Johnson",
-    email: "robert@kia-dealer.com",
-    role: "dealer",
-    status: "active",
-    joinedDate: "2023-01-05",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 4,
-    name: "Sarah Williams",
-    email: "sarah@kia-dealer.com",
-    role: "dealer",
-    status: "active",
-    joinedDate: "2023-03-10",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 5,
-    name: "Michael Brown",
-    email: "michael@kia-admin.com",
-    role: "admin",
-    status: "active",
-    joinedDate: "2022-12-01",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-]
-
-// Pending admin requests
-const adminRequests = [
-  {
-    id: 101,
-    name: "David Lee",
-    email: "david@kia-dealer.com",
-    role: "dealer",
-    requestDate: "2023-04-15",
-    reason: "Need temporary admin access to update regional pricing for the new Kia Seltos model launch.",
-    duration: "7 days",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-  {
-    id: 102,
-    name: "Emily Chen",
-    email: "emily@kia-dealer.com",
-    role: "dealer",
-    requestDate: "2023-04-18",
-    reason: "Require admin access to update dealer information and manage inventory during the annual sales event.",
-    duration: "3 days",
-    avatar: "/placeholder.svg?height=40&width=40",
-  },
-]
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function UsersPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState("all")
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [users, setUsers] = useState([])
+  const [filteredUsers, setFilteredUsers] = useState([])
+  const [pendingRequests, setPendingRequests] = useState([])
+  const [requestHistory, setRequestHistory] = useState([])
+  const [error, setError] = useState(null)
   const [showAddDealerDialog, setShowAddDealerDialog] = useState(false)
-
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-
-    if (activeTab === "all") return matchesSearch
-    return matchesSearch && user.role === activeTab
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false)
+  const [showDemoteDialog, setShowDemoteDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedRole, setSelectedRole] = useState("ALL")
+  const [activeTab, setActiveTab] = useState("users")
+  const [newDealer, setNewDealer] = useState({
+    username: "",
+    password: "",
+    dealershipName: "",
+    fullName: "",
+    email: "",
+    dealershipAddress: "",
+    phoneNumber: ""
   })
+  const [pagination, setPagination] = useState({
+    pageNumber: 0,
+    totalPages: 0,
+    totalElements: 0,
+    size: 20
+  })
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
+
+        const response = await fetch("http://localhost:8080/api/admin/users", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch users")
+        }
+
+        const data = await response.json()
+        
+        if (!data.content || !Array.isArray(data.content)) {
+          console.error("Invalid API response structure:", data)
+          throw new Error("Invalid data format received from server")
+        }
+
+        setUsers(data.content)
+        setFilteredUsers(data.content)
+        setPagination({
+          pageNumber: data.pageable.pageNumber,
+          totalPages: data.totalPages,
+          totalElements: data.totalElements,
+          size: data.size
+        })
+        setError(null)
+      } catch (error) {
+        console.error("Error fetching users:", error)
+        setError(error.message || "Failed to load users")
+        toast.error(error.message || "Failed to load users")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [])
+
+  useEffect(() => {
+    let filtered = [...users]
+
+    // Apply role filter
+    if (selectedRole !== "ALL") {
+      filtered = filtered.filter(user => user.role === selectedRole)
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(user => 
+        user.fullName.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredUsers(filtered)
+  }, [searchQuery, selectedRole, users])
+
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
+
+        const response = await fetch("http://localhost:8080/api/user/admin-requests", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          }
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Unauthorized: Please log in again")
+          }
+          if (response.status === 403) {
+            throw new Error("Forbidden: You don't have permission to view admin requests")
+          }
+          throw new Error("Failed to fetch pending requests")
+        }
+
+        const data = await response.json()
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid response format from server")
+        }
+        setPendingRequests(data)
+      } catch (error) {
+        console.error("Error fetching pending requests:", error)
+        toast.error(error.message || "Failed to load pending requests")
+        if (error.message.includes("Unauthorized") || error.message.includes("Forbidden")) {
+          router.push("/login")
+        }
+      }
+    }
+
+    const fetchRequestHistory = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
+
+        const response = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          }
+        })
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Unauthorized: Please log in again")
+          }
+          if (response.status === 403) {
+            throw new Error("Forbidden: You don't have permission to view request history")
+          }
+          throw new Error("Failed to fetch request history")
+        }
+
+        const data = await response.json()
+        if (!Array.isArray(data)) {
+          throw new Error("Invalid response format from server")
+        }
+        setRequestHistory(data)
+      } catch (error) {
+        console.error("Error fetching request history:", error)
+        toast.error(error.message || "Failed to load request history")
+        if (error.message.includes("Unauthorized") || error.message.includes("Forbidden")) {
+          router.push("/login")
+        }
+      }
+    }
+
+    if (activeTab === "requests") {
+      fetchPendingRequests()
+    } else if (activeTab === "history") {
+      fetchRequestHistory()
+    }
+  }, [activeTab, router])
+
+  const handleDelete = async (userId) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to delete user")
+      }
+
+      toast.success("User deleted successfully")
+      setShowDeleteDialog(false)
+      setUsers(users.filter(user => user.id !== userId))
+    } catch (error) {
+      console.error("Delete error:", error)
+      toast.error(error.message || "Failed to delete user")
+    }
+  }
+
+  const handleAddDealer = async () => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch("http://localhost:8080/api/user/dealer", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newDealer)
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to add dealer")
+      }
+
+      toast.success("Dealer added successfully")
+      setShowAddDealerDialog(false)
+      setNewDealer({
+        username: "",
+        password: "",
+        dealershipName: "",
+        fullName: "",
+        email: "",
+        dealershipAddress: "",
+        phoneNumber: ""
+      })
+      // Refresh users list
+      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      const data = await fetchResponse.json()
+      setUsers(data.content)
+    } catch (error) {
+      console.error("Add dealer error:", error)
+      toast.error(error.message || "Failed to add dealer")
+    }
+  }
+
+  const handlePromoteToAdmin = async (userId) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/user/promote-to-admin/${userId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to promote user")
+      }
+
+      toast.success("User promoted to admin successfully")
+      setShowPromoteDialog(false)
+      // Refresh users list
+      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      const data = await fetchResponse.json()
+      setUsers(data.content)
+    } catch (error) {
+      console.error("Promote error:", error)
+      toast.error(error.message || "Failed to promote user")
+    }
+  }
+
+  const handleDemoteToDealer = async (userId) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/user/demote-to-dealer/${userId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to demote user")
+      }
+
+      toast.success("User demoted to dealer successfully")
+      setShowDemoteDialog(false)
+      // Refresh users list
+      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+      const data = await fetchResponse.json()
+      setUsers(data.content)
+    } catch (error) {
+      console.error("Demote error:", error)
+      toast.error(error.message || "Failed to demote user")
+    }
+  }
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/user/admin-requests/${requestId}/approve`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          response: "Request approved. You have been granted temporary admin access for 7 days."
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to approve request")
+      }
+
+      toast.success("Request approved successfully")
+      setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
+    } catch (error) {
+      console.error("Approve error:", error)
+      toast.error(error.message || "Failed to approve request")
+    }
+  }
+
+  const handleDenyRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/user/admin-requests/${requestId}/deny`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          response: "Request rejected. Please contact customer care."
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to deny request")
+      }
+
+      toast.success("Request denied successfully")
+      setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
+    } catch (error) {
+      console.error("Deny error:", error)
+      toast.error(error.message || "Failed to deny request")
+    }
+  }
+
+  const getRoleBadgeVariant = (role) => {
+    switch (role) {
+      case "ADMIN":
+        return "default"
+      case "DEALER":
+        return "secondary"
+      case "CUSTOMER":
+        return "outline"
+      default:
+        return "outline"
+    }
+  }
+
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "success"
+      case "INACTIVE":
+        return "destructive"
+      default:
+        return "outline"
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="flex flex-col items-center space-y-4">
+          <p className="text-red-500">{error}</p>
+          <Button onClick={() => router.push("/admin")}>
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container mx-auto px-4 md:px-6">
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Manage Users</h1>
+          <div className="flex items-center space-x-2">
+            <Link href="/admin">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+          </div>
           <Dialog open={showAddDealerDialog} onOpenChange={setShowAddDealerDialog}>
             <DialogTrigger asChild>
               <Button>
@@ -144,82 +501,117 @@ export default function UsersPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Name
-                  </Label>
-                  <Input id="name" placeholder="Dealer name" className="col-span-3" />
+                  <Label htmlFor="username" className="text-right">Username</Label>
+                  <Input
+                    id="username"
+                    value={newDealer.username}
+                    onChange={(e) => setNewDealer({ ...newDealer, username: e.target.value })}
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input id="email" placeholder="dealer@example.com" className="col-span-3" />
+                  <Label htmlFor="password" className="text-right">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={newDealer.password}
+                    onChange={(e) => setNewDealer({ ...newDealer, password: e.target.value })}
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">
-                    Phone
-                  </Label>
-                  <Input id="phone" placeholder="+91 98765 43210" className="col-span-3" />
+                  <Label htmlFor="dealershipName" className="text-right">Dealership Name</Label>
+                  <Input
+                    id="dealershipName"
+                    value={newDealer.dealershipName}
+                    onChange={(e) => setNewDealer({ ...newDealer, dealershipName: e.target.value })}
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="dealerCode" className="text-right">
-                    Dealer Code
-                  </Label>
-                  <Input id="dealerCode" placeholder="KIA-DLR-001" className="col-span-3" />
+                  <Label htmlFor="fullName" className="text-right">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={newDealer.fullName}
+                    onChange={(e) => setNewDealer({ ...newDealer, fullName: e.target.value })}
+                    className="col-span-3"
+                  />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="location" className="text-right">
-                    Location
-                  </Label>
-                  <Input id="location" placeholder="City, State" className="col-span-3" />
+                  <Label htmlFor="email" className="text-right">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newDealer.email}
+                    onChange={(e) => setNewDealer({ ...newDealer, email: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="dealershipAddress" className="text-right">Address</Label>
+                  <Input
+                    id="dealershipAddress"
+                    value={newDealer.dealershipAddress}
+                    onChange={(e) => setNewDealer({ ...newDealer, dealershipAddress: e.target.value })}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="phoneNumber" className="text-right">Phone</Label>
+                  <Input
+                    id="phoneNumber"
+                    value={newDealer.phoneNumber}
+                    onChange={(e) => setNewDealer({ ...newDealer, phoneNumber: e.target.value })}
+                    className="col-span-3"
+                  />
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowAddDealerDialog(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => setShowAddDealerDialog(false)}>Add Dealer</Button>
+                <Button onClick={handleAddDealer}>Add Dealer</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        <Tabs defaultValue="users" className="space-y-4">
-          <TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="requests">Admin Requests</TabsTrigger>
+            <TabsTrigger value="requests">Pending Requests</TabsTrigger>
+            <TabsTrigger value="history">Request History</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="users">
             <Card>
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>
-                  Manage customers, dealers, and administrators. Promote or demote users as needed.
+                  View and manage all users in the system. Showing {filteredUsers.length} of {pagination.totalElements} users.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col space-y-4">
-                  <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                  <div className="flex items-center space-x-4">
                     <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                       <Input
-                        type="search"
                         placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
-                    <Select defaultValue="all" onValueChange={(value) => setActiveTab(value)}>
-                      <SelectTrigger className="w-full sm:w-[180px]">
+                    <Select value={selectedRole} onValueChange={setSelectedRole}>
+                      <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Users</SelectItem>
-                        <SelectItem value="customer">Customers</SelectItem>
-                        <SelectItem value="dealer">Dealers</SelectItem>
-                        <SelectItem value="admin">Admins</SelectItem>
+                        <SelectItem value="ALL">All Roles</SelectItem>
+                        <SelectItem value="ADMIN">Admin</SelectItem>
+                        <SelectItem value="DEALER">Dealer</SelectItem>
+                        <SelectItem value="CUSTOMER">Customer</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -228,82 +620,127 @@ export default function UsersPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>User</TableHead>
+                          <TableHead>Name</TableHead>
                           <TableHead>Email</TableHead>
                           <TableHead>Role</TableHead>
-                          <TableHead className="hidden md:table-cell">Joined Date</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
-                              No users found.
+                            <TableCell colSpan={5} className="text-center">
+                              No users found
                             </TableCell>
                           </TableRow>
                         ) : (
                           filteredUsers.map((user) => (
                             <TableRow key={user.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center space-x-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span>{user.name}</span>
-                                </div>
-                              </TableCell>
+                              <TableCell>{user.fullName}</TableCell>
                               <TableCell>{user.email}</TableCell>
                               <TableCell>
-                                <Badge
-                                  variant={
-                                    user.role === "admin" ? "default" : user.role === "dealer" ? "secondary" : "outline"
-                                  }
-                                >
-                                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                <Badge variant={getRoleBadgeVariant(user.role)}>
+                                  {user.role}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="hidden md:table-cell">{user.joinedDate}</TableCell>
                               <TableCell>
-                                <Badge variant={user.status === "active" ? "success" : "destructive"}>
-                                  {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                                <Badge variant={getStatusBadgeVariant(user.accountStatus)}>
+                                  {user.accountStatus}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                      <span className="sr-only">Open menu</span>
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem>
-                                      <UserCog className="mr-2 h-4 w-4" />
-                                      Edit User
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    {user.role === "dealer" && (
-                                      <DropdownMenuItem>
-                                        <Shield className="mr-2 h-4 w-4" />
-                                        Promote to Admin
-                                      </DropdownMenuItem>
-                                    )}
-                                    {user.role === "admin" && (
-                                      <DropdownMenuItem>
-                                        <ShieldAlert className="mr-2 h-4 w-4" />
-                                        Demote to Dealer
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem className="text-red-600">
-                                      <Trash className="mr-2 h-4 w-4" />
-                                      Delete User
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                              <TableCell>
+                                <div className="flex space-x-2">
+                                  {user.role === "DEALER" && (
+                                    <>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => {
+                                          setSelectedUser(user)
+                                          setShowPromoteDialog(true)
+                                        }}
+                                      >
+                                        <Shield className="h-4 w-4" />
+                                      </Button>
+                                      <AlertDialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Promote to Admin</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to promote {selectedUser?.fullName} to Admin role? 
+                                              This will give them full administrative access to the system.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handlePromoteToAdmin(selectedUser?.id)}>
+                                              Promote
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </>
+                                  )}
+                                  {user.role === "ADMIN" && (
+                                    <>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => {
+                                          setSelectedUser(user)
+                                          setShowDemoteDialog(true)
+                                        }}
+                                      >
+                                        <ShieldAlert className="h-4 w-4" />
+                                      </Button>
+                                      <AlertDialog open={showDemoteDialog} onOpenChange={setShowDemoteDialog}>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Demote to Dealer</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Are you sure you want to demote {selectedUser?.fullName} to Dealer role? 
+                                              This will remove their administrative privileges.
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDemoteToDealer(selectedUser?.id)}>
+                                              Demote
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </>
+                                  )}
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => {
+                                      setSelectedUser(user)
+                                      setShowDeleteDialog(true)
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete {selectedUser?.fullName}? 
+                                          This action cannot be undone and will permanently remove the user from the system.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(selectedUser?.id)}>
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -311,99 +748,123 @@ export default function UsersPage() {
                       </TableBody>
                     </Table>
                   </div>
-
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious href="#" />
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationLink href="#" isActive>
-                          1
-                        </PaginationLink>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationLink href="#">2</PaginationLink>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationLink href="#">3</PaginationLink>
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                      <PaginationItem>
-                        <PaginationNext href="#" />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="requests" className="space-y-4">
+          <TabsContent value="requests">
             <Card>
               <CardHeader>
-                <CardTitle>Temporary Admin Requests</CardTitle>
+                <CardTitle>Pending Admin Requests</CardTitle>
                 <CardDescription>
-                  Review and approve requests from dealers for temporary admin privileges.
+                  Review and manage requests for admin access. Showing {pendingRequests.length} pending requests.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col space-y-4">
-                  {adminRequests.length === 0 ? (
-                    <div className="rounded-md border p-4 text-center">
-                      <p>No pending admin requests.</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Dealer</TableHead>
-                            <TableHead className="hidden md:table-cell">Request Date</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead className="hidden lg:table-cell">Reason</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Current Role</TableHead>
+                        <TableHead>Request Date</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pendingRequests.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">
+                            No pending requests
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        pendingRequests.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell>{request.user.fullName}</TableCell>
+                            <TableCell>{request.user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant={getRoleBadgeVariant(request.user.role)}>
+                                {request.user.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApproveRequest(request.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDenyRequest(request.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {adminRequests.map((request) => (
-                            <TableRow key={request.id}>
-                              <TableCell>
-                                <div className="flex items-center space-x-2">
-                                  <Avatar className="h-8 w-8">
-                                    <AvatarImage src={request.avatar} alt={request.name} />
-                                    <AvatarFallback>{request.name.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <div>
-                                    <p className="font-medium">{request.name}</p>
-                                    <p className="text-sm text-muted-foreground">{request.email}</p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell">{request.requestDate}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center">
-                                  <Clock className="mr-1 h-4 w-4 text-muted-foreground" />
-                                  {request.duration}
-                                </div>
-                              </TableCell>
-                              <TableCell className="hidden lg:table-cell max-w-xs truncate">{request.reason}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" size="sm">
-                                    Deny
-                                  </Button>
-                                  <Button size="sm">Approve</Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  )}
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admin Request History</CardTitle>
+                <CardDescription>
+                  View the history of all admin access requests. Showing {requestHistory.length} requests.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Response</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {requestHistory.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center">
+                            No request history found
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        requestHistory.map((request) => (
+                          <TableRow key={request.id}>
+                            <TableCell>{request.user.fullName}</TableCell>
+                            <TableCell>{request.user.email}</TableCell>
+                            <TableCell>
+                              <Badge variant={request.status === "APPROVED" ? "success" : "destructive"}>
+                                {request.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{request.response}</TableCell>
+                            <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>

@@ -24,7 +24,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import { Plus, Search, MoreHorizontal, Edit, Trash, FileUp, Loader2 } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Edit, Trash, FileUp, Loader2, Upload } from "lucide-react"
 import { toast } from "sonner"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
@@ -133,20 +133,17 @@ export default function VehiclesPage() {
   return (
     <div className="container mx-auto px-4 md:px-6">
       <div className="flex flex-col space-y-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Manage Vehicles</h1>
-          <div className="flex space-x-2">
-            <Link href="/admin/vehicles/import">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Vehicles</h1>
+          <div className="flex gap-2">
+            <Link href="/admin/vehicles/bulk-import">
               <Button variant="outline">
-                <FileUp className="mr-2 h-4 w-4" />
-                Import
+                <Upload className="mr-2 h-4 w-4" />
+                Bulk Import
               </Button>
             </Link>
             <Link href="/admin/vehicles/add">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Vehicle
-              </Button>
+              <Button>Add Vehicle</Button>
             </Link>
           </div>
         </div>
