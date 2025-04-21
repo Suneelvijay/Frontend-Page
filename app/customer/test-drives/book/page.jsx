@@ -1,335 +1,262 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
-import { CalendarIcon, MapPin } from "lucide-react"
-
-// Mock data for vehicles
-const mockVehicles = [
-  {
-    id: 1,
-    name: "Kia Seltos",
-    category: "SUV",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 2,
-    name: "Kia Sonet",
-    category: "SUV",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 3,
-    name: "Kia Carnival",
-    category: "MPV",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 4,
-    name: "Kia EV6",
-    category: "Electric",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-  {
-    id: 5,
-    name: "Kia Carens",
-    category: "MPV",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-]
-
-// Mock data for dealers
-const mockDealers = [
-  {
-    id: 1,
-    name: "Kia Motors Whitefield",
-    address: "100 Feet Road, Whitefield, Bangalore",
-    phone: "+91 9876543210",
-  },
-  {
-    id: 2,
-    name: "Kia Motors Indiranagar",
-    address: "100 Feet Road, Indiranagar, Bangalore",
-    phone: "+91 9876543211",
-  },
-  {
-    id: 3,
-    name: "Kia Motors Electronic City",
-    address: "Electronic City Phase 1, Bangalore",
-    phone: "+91 9876543212",
-  },
-]
-
-// Available time slots
-const timeSlots = [
-  "10:00 AM",
-  "10:30 AM",
-  "11:00 AM",
-  "11:30 AM",
-  "12:00 PM",
-  "12:30 PM",
-  "02:00 PM",
-  "02:30 PM",
-  "03:00 PM",
-  "03:30 PM",
-  "04:00 PM",
-  "04:30 PM",
-  "05:00 PM",
-  "05:30 PM",
-]
+import { CalendarIcon, Loader2, ArrowLeft } from "lucide-react"
+import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 export default function BookTestDrivePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const vehicleIdParam = searchParams.get("vehicleId")
+  const vehicleId = searchParams.get("vehicleId")
 
-  const [selectedVehicle, setSelectedVehicle] = useState(vehicleIdParam ? Number.parseInt(vehicleIdParam) : "")
-  const [selectedDealer, setSelectedDealer] = useState("")
-  const [selectedDate, setSelectedDate] = useState(null)
-  const [selectedTime, setSelectedTime] = useState("")
-  const [contactName, setContactName] = useState("")
-  const [contactPhone, setContactPhone] = useState("")
-  const [contactEmail, setContactEmail] = useState("")
-  const [preferredContact, setPreferredContact] = useState("phone")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [vehicle, setVehicle] = useState(null)
+  const [date, setDate] = useState()
+  const [time, setTime] = useState("")
+  const [notes, setNotes] = useState("")
 
-  // Find the selected vehicle details
-  const vehicleDetails = selectedVehicle ? mockVehicles.find((v) => v.id === Number.parseInt(selectedVehicle)) : null
+  useEffect(() => {
+    const fetchVehicleDetails = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
 
-  // Handle form submission
-  const handleSubmit = (e) => {
+        const response = await fetch(`http://localhost:8080/api/user/vehicles/${vehicleId}`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch vehicle details")
+        }
+
+        const data = await response.json()
+        setVehicle(data)
+        setLoading(false)
+      } catch (error) {
+        console.error("Error fetching vehicle:", error)
+        toast.error(error.message || "Failed to load vehicle details")
+        setLoading(false)
+      }
+    }
+
+    if (vehicleId) {
+      fetchVehicleDetails()
+    } else {
+      toast.error("No vehicle selected")
+      router.push("/customer/vehicles")
+    }
+  }, [vehicleId, router])
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    setIsSubmitting(true)
+    if (!date || !time) {
+      toast.error("Please select both date and time")
+      return
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      // Redirect to test drives page
+    try {
+      setSubmitting(true)
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      // Combine date and time into ISO string
+      const requestedDate = new Date(date)
+      const [hours, minutes] = time.split(":").map(Number)
+      requestedDate.setHours(hours, minutes)
+
+      const response = await fetch("http://localhost:8080/api/user/test-drive", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          vehicleId: parseInt(vehicleId),
+          requestedDate: requestedDate.toISOString(),
+          notes: notes
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to book test drive")
+      }
+
+      toast.success("Test drive booked successfully!")
       router.push("/customer/test-drives")
-    }, 1500)
+    } catch (error) {
+      console.error("Error booking test drive:", error)
+      toast.error(error.message || "Failed to book test drive")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Vehicle not found</h2>
+          <Button onClick={() => router.push("/customer/vehicles")} className="mt-4">
+            Back to Vehicles
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Book a Test Drive</h1>
-        <Link href="/customer/test-drives">
-          <Button variant="outline">Back to Test Drives</Button>
-        </Link>
-      </div>
+    <div className="container mx-auto px-4 md:px-6">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          <h1 className="text-2xl font-bold tracking-tight">Book Test Drive</h1>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <form onSubmit={handleSubmit}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Test Drive Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Vehicle Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="vehicle">Select Vehicle</Label>
-                  <Select value={selectedVehicle.toString()} onValueChange={setSelectedVehicle} required>
-                    <SelectTrigger id="vehicle">
-                      <SelectValue placeholder="Select a vehicle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockVehicles.map((vehicle) => (
-                        <SelectItem key={vehicle.id} value={vehicle.id.toString()}>
-                          {vehicle.name} ({vehicle.category})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Vehicle Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Vehicle Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="relative h-48 w-full">
+                  {vehicle.image ? (
+                    <img
+                      src={`data:image/jpeg;base64,${vehicle.image}`}
+                      alt={vehicle.name}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-400">No image available</span>
+                    </div>
+                  )}
                 </div>
-
-                {/* Dealer Selection */}
-                <div className="space-y-2">
-                  <Label htmlFor="dealer">Select Dealer</Label>
-                  <Select value={selectedDealer} onValueChange={setSelectedDealer} required>
-                    <SelectTrigger id="dealer">
-                      <SelectValue placeholder="Select a dealer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockDealers.map((dealer) => (
-                        <SelectItem key={dealer.id} value={dealer.id.toString()}>
-                          {dealer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
+                  <h3 className="text-lg font-semibold">{vehicle.name}</h3>
+                  <p className="text-sm text-muted-foreground">{vehicle.type} • {vehicle.fuelType}</p>
+                  <p className="mt-2 text-sm">{vehicle.description}</p>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Date Selection */}
+          {/* Test Drive Form */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Test Drive Details</CardTitle>
+              <CardDescription>
+                Please select your preferred date and time for the test drive.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Select Date</Label>
+                  <label className="text-sm font-medium">Preferred Date</label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal" id="date">
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !date && "text-muted-foreground"
+                        )}
+                      >
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+                        {date ? format(date, "PPP") : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
+                        selected={date}
+                        onSelect={setDate}
                         initialFocus
-                        disabled={(date) => {
-                          // Disable past dates and Sundays
-                          return date < new Date() || date.getDay() === 0
-                        }}
+                        disabled={(date) =>
+                          date < new Date() || date > new Date(new Date().setDate(new Date().getDate() + 30))
+                        }
                       />
                     </PopoverContent>
                   </Popover>
                 </div>
 
-                {/* Time Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="time">Select Time</Label>
-                  <Select value={selectedTime} onValueChange={setSelectedTime} required disabled={!selectedDate}>
-                    <SelectTrigger id="time">
-                      <SelectValue placeholder="Select a time slot" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>
-                          {time}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium">Preferred Time</label>
+                  <Input
+                    type="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    min="09:00"
+                    max="18:00"
+                    step="3600"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Test drives are available between 9:00 AM and 6:00 PM
+                  </p>
                 </div>
 
-                {/* Contact Information */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="font-medium">Contact Information</h3>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" value={contactName} onChange={(e) => setContactName(e.target.value)} required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} required />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={contactEmail}
-                      onChange={(e) => setContactEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Preferred Contact Method</Label>
-                    <RadioGroup value={preferredContact} onValueChange={setPreferredContact} className="flex gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="phone" id="phone-contact" />
-                        <Label htmlFor="phone-contact">Phone</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="email" id="email-contact" />
-                        <Label htmlFor="email-contact">Email</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Additional Notes</label>
+                  <Textarea
+                    placeholder="Any specific features you'd like to test or questions you have..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button
-                  type="submit"
-                  className="w-full bg-red-600 hover:bg-red-700"
-                  disabled={isSubmitting || !selectedVehicle || !selectedDealer || !selectedDate || !selectedTime}
-                >
-                  {isSubmitting ? "Booking..." : "Book Test Drive"}
+
+                <div className="space-y-4">
+                  <h4 className="font-medium">Instructions</h4>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc pl-4">
+                    <li>Please arrive 10 minutes before your scheduled time</li>
+                    <li>Bring your valid driver's license</li>
+                    <li>The test drive will last approximately 30 minutes</li>
+                    <li>Our representative will guide you through the vehicle features</li>
+                    <li>In case of any changes, please contact us at least 24 hours in advance</li>
+                  </ul>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Booking...
+                    </>
+                  ) : (
+                    "Book Test Drive"
+                  )}
                 </Button>
-              </CardFooter>
-            </Card>
-          </form>
-        </div>
-
-        <div className="lg:col-span-1">
-          {/* Selected Vehicle Preview */}
-          {vehicleDetails && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Selected Vehicle</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Image
-                  src={vehicleDetails.image || "/placeholder.svg"}
-                  alt={vehicleDetails.name}
-                  width={300}
-                  height={200}
-                  className="w-full h-48 object-cover rounded-md"
-                />
-                <div>
-                  <h3 className="font-semibold text-lg">{vehicleDetails.name}</h3>
-                  <p className="text-muted-foreground">{vehicleDetails.category}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Selected Dealer Preview */}
-          {selectedDealer && (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Selected Dealer</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {mockDealers.find((d) => d.id.toString() === selectedDealer)?.name}
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{mockDealers.find((d) => d.id.toString() === selectedDealer)?.address}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Test Drive Information */}
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Test Drive Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm">
-                  <span className="font-medium">What to bring:</span> Valid driving license, ID proof
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Duration:</span> Approximately 30 minutes
-                </p>
-                <p className="text-sm">
-                  <span className="font-medium">Cancellation:</span> You can cancel your test drive up to 4 hours before
-                  the scheduled time.
-                </p>
-              </div>
+              </form>
             </CardContent>
           </Card>
         </div>

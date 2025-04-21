@@ -1,171 +1,310 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Calendar, Clock, MapPin, FileDown, AlertTriangle } from "lucide-react"
-
-// Mock data for test drives
-const mockTestDrives = [
-  {
-    id: 1,
-    vehicleName: "Kia Seltos",
-    vehicleId: 1,
-    bookingDate: "2023-04-15",
-    bookingTime: "10:30 AM",
-    dealerName: "Kia Motors Whitefield",
-    dealerAddress: "100 Feet Road, Whitefield, Bangalore",
-    status: "Scheduled",
-    createdAt: "2023-04-10",
-  },
-  {
-    id: 2,
-    vehicleName: "Kia Sonet",
-    vehicleId: 2,
-    bookingDate: "2023-04-20",
-    bookingTime: "03:00 PM",
-    dealerName: "Kia Motors Indiranagar",
-    dealerAddress: "100 Feet Road, Indiranagar, Bangalore",
-    status: "Completed",
-    createdAt: "2023-04-05",
-  },
-  {
-    id: 3,
-    vehicleName: "Kia Carnival",
-    vehicleId: 3,
-    bookingDate: "2023-04-25",
-    bookingTime: "11:00 AM",
-    dealerName: "Kia Motors Electronic City",
-    dealerAddress: "Electronic City Phase 1, Bangalore",
-    status: "Cancelled",
-    createdAt: "2023-04-08",
-  },
-]
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronLeft, ChevronRight, Loader2, XCircle, Search, Calendar, Clock, MapPin, FileDown, AlertTriangle, MoreHorizontal, Eye } from "lucide-react"
+import { toast } from "sonner"
+import { format } from "date-fns"
 
 export default function TestDrivesPage() {
   const router = useRouter()
-  const [testDrives, setTestDrives] = useState(mockTestDrives)
-  const [selectedTestDrive, setSelectedTestDrive] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [allRequests, setAllRequests] = useState([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("ALL")
+  const [selectedRequest, setSelectedRequest] = useState(null)
+  const [pagination, setPagination] = useState({
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0
+  })
 
-  const cancelTestDrive = (id) => {
-    setTestDrives(testDrives.map((td) => (td.id === id ? { ...td, status: "Cancelled" } : td)))
-  }
+  const fetchRequests = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case "Scheduled":
-        return <Badge className="bg-blue-500">Scheduled</Badge>
-      case "Completed":
-        return <Badge className="bg-green-500">Completed</Badge>
-      case "Cancelled":
-        return <Badge className="bg-red-500">Cancelled</Badge>
-      default:
-        return <Badge>{status}</Badge>
+      const response = await fetch("http://localhost:8080/api/user/test-drive/list", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          page: pagination.page,
+          size: pagination.size
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch test drive requests")
+      }
+
+      const data = await response.json()
+      setAllRequests(data.content)
+      setPagination(prev => ({
+        ...prev,
+        totalPages: data.totalPages,
+        totalElements: data.totalElements
+      }))
+    } catch (error) {
+      console.error("Error fetching requests:", error)
+      toast.error(error.message || "Failed to load test drive requests")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const downloadPDF = (testDrive) => {
+  useEffect(() => {
+    fetchRequests()
+  }, [pagination.page, pagination.size])
+
+  // Filter and search requests on the frontend
+  const filteredRequests = useMemo(() => {
+    return allRequests.filter(request => {
+      const matchesSearch = searchQuery === "" || 
+        request.vehicleName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (request.notes && request.notes.toLowerCase().includes(searchQuery.toLowerCase()))
+      
+      const matchesStatus = statusFilter === "ALL" || request.status === statusFilter
+      
+      return matchesSearch && matchesStatus
+    })
+  }, [allRequests, searchQuery, statusFilter])
+
+  const handleCancel = async (id) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const response = await fetch(`http://localhost:8080/api/user/test-drive/${id}/cancel`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to cancel test drive request")
+      }
+
+      toast.success("Test drive request cancelled successfully")
+      fetchRequests() // Refresh the list
+    } catch (error) {
+      console.error("Error cancelling request:", error)
+      toast.error(error.message || "Failed to cancel test drive request")
+    }
+  }
+
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case "PENDING":
+        return "warning"
+      case "APPROVED":
+        return "success"
+      case "REJECTED":
+        return "destructive"
+      case "CANCELLED":
+        return "secondary"
+      default:
+        return "default"
+    }
+  }
+
+  const downloadPDF = (request) => {
     // In a real app, this would generate and download a PDF
-    alert(`Downloading test drive details for ${testDrive.vehicleName}`)
+    alert(`Downloading test drive details for ${request.vehicleName}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 md:px-6 py-8">
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Test Drives</h1>
-        <div className="flex gap-2">
-          <Link href="/customer/dashboard">
-            <Button variant="outline">Back to Dashboard</Button>
-          </Link>
-          <Link href="/customer/vehicles">
-            <Button className="bg-red-600 hover:bg-red-700">Book New Test Drive</Button>
-          </Link>
+    <div className="container mx-auto px-4 md:px-6">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Test Drive Requests</h1>
+          <Button onClick={() => router.push("/customer/vehicles")}>
+            Book New Test Drive
+          </Button>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Test Drive Requests</CardTitle>
+            <CardDescription>
+              View and manage your test drive requests
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative w-full md:w-[600px]">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search by vehicle name or notes..."
+                    className="pl-10 h-12 text-base w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Select
+                  value={statusFilter}
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ALL">All Status</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredRequests.length} of {pagination.totalElements} requests
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Select
+                    value={pagination.size.toString()}
+                    onValueChange={(value) => setPagination(prev => ({ ...prev, size: parseInt(value), page: 0 }))}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue placeholder="Items per page" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="20">20 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vehicle</TableHead>
+                      <TableHead>Date & Time</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-4">
+                          No test drive requests found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRequests.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.vehicleName}</TableCell>
+                          <TableCell>
+                            {format(new Date(request.requestedDate), "PPP p")}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(request.status)}>
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {request.notes || "-"}
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedRequest(request)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                {request.status === "PENDING" && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleCancel(request.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancel Request
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Page {pagination.page + 1} of {pagination.totalPages}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.max(0, prev.page - 1) }))}
+                    disabled={pagination.page === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages - 1, prev.page + 1) }))}
+                    disabled={pagination.page === pagination.totalPages - 1}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <Tabs defaultValue="all">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {testDrives.map((testDrive) => (
-              <TestDriveCard
-                key={testDrive.id}
-                testDrive={testDrive}
-                onCancel={() => cancelTestDrive(testDrive.id)}
-                onDownload={() => downloadPDF(testDrive)}
-                onView={() => setSelectedTestDrive(testDrive)}
-                getStatusBadge={getStatusBadge}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="scheduled" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {testDrives
-              .filter((td) => td.status === "Scheduled")
-              .map((testDrive) => (
-                <TestDriveCard
-                  key={testDrive.id}
-                  testDrive={testDrive}
-                  onCancel={() => cancelTestDrive(testDrive.id)}
-                  onDownload={() => downloadPDF(testDrive)}
-                  onView={() => setSelectedTestDrive(testDrive)}
-                  getStatusBadge={getStatusBadge}
-                />
-              ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="completed" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {testDrives
-              .filter((td) => td.status === "Completed")
-              .map((testDrive) => (
-                <TestDriveCard
-                  key={testDrive.id}
-                  testDrive={testDrive}
-                  onCancel={() => cancelTestDrive(testDrive.id)}
-                  onDownload={() => downloadPDF(testDrive)}
-                  onView={() => setSelectedTestDrive(testDrive)}
-                  getStatusBadge={getStatusBadge}
-                />
-              ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="cancelled" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {testDrives
-              .filter((td) => td.status === "Cancelled")
-              .map((testDrive) => (
-                <TestDriveCard
-                  key={testDrive.id}
-                  testDrive={testDrive}
-                  onCancel={() => cancelTestDrive(testDrive.id)}
-                  onDownload={() => downloadPDF(testDrive)}
-                  onView={() => setSelectedTestDrive(testDrive)}
-                  getStatusBadge={getStatusBadge}
-                />
-              ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-
       {/* Test Drive Details Dialog */}
-      {selectedTestDrive && (
-        <Dialog open={!!selectedTestDrive} onOpenChange={(open) => !open && setSelectedTestDrive(null)}>
+      {selectedRequest && (
+        <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Test Drive Details</DialogTitle>
@@ -173,45 +312,46 @@ export default function TestDrivesPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="font-semibold text-lg">{selectedTestDrive.vehicleName}</h3>
+                  <h3 className="font-semibold text-lg">{selectedRequest.vehicleName}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Booking ID: TD{selectedTestDrive.id.toString().padStart(6, "0")}
+                    Booking ID: TD{selectedRequest.id.toString().padStart(6, "0")}
                   </p>
                 </div>
-                {getStatusBadge(selectedTestDrive.status)}
+                <Badge variant={getStatusBadgeVariant(selectedRequest.status)}>
+                  {selectedRequest.status}
+                </Badge>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Date: {selectedTestDrive.bookingDate}</span>
+                  <span>Date: {format(new Date(selectedRequest.requestedDate), "PPP")}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>Time: {selectedTestDrive.bookingTime}</span>
+                  <span>Time: {format(new Date(selectedRequest.requestedDate), "p")}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>Dealer: {selectedTestDrive.dealerName}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>Address: {selectedTestDrive.dealerAddress}</span>
-                </div>
+                {selectedRequest.notes && (
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm text-muted-foreground">Notes: {selectedRequest.notes}</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 border-t">
-                <p className="text-sm text-muted-foreground">Booked on: {selectedTestDrive.createdAt}</p>
+                <p className="text-sm text-muted-foreground">
+                  Requested on: {format(new Date(selectedRequest.createdAt), "PPP")}
+                </p>
               </div>
             </div>
             <DialogFooter className="flex sm:justify-between">
               <div className="flex gap-2">
-                {selectedTestDrive.status === "Scheduled" && (
+                {selectedRequest.status === "PENDING" && (
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      cancelTestDrive(selectedTestDrive.id)
-                      setSelectedTestDrive({ ...selectedTestDrive, status: "Cancelled" })
+                      handleCancel(selectedRequest.id)
+                      setSelectedRequest(null)
                     }}
                     className="flex items-center gap-1"
                   >
@@ -221,67 +361,20 @@ export default function TestDrivesPage() {
                 )}
                 <Button
                   variant="outline"
-                  onClick={() => downloadPDF(selectedTestDrive)}
+                  onClick={() => downloadPDF(selectedRequest)}
                   className="flex items-center gap-1"
                 >
                   <FileDown className="h-4 w-4" />
                   Download PDF
                 </Button>
               </div>
-              <DialogClose asChild>
-                <Button variant="outline">Close</Button>
-              </DialogClose>
+              <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
     </div>
-  )
-}
-
-function TestDriveCard({ testDrive, onCancel, onDownload, onView, getStatusBadge }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{testDrive.vehicleName}</CardTitle>
-            <p className="text-sm text-muted-foreground">Booking ID: TD{testDrive.id.toString().padStart(6, "0")}</p>
-          </div>
-          {getStatusBadge(testDrive.status)}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{testDrive.bookingDate}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>{testDrive.bookingTime}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span>{testDrive.dealerName}</span>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" size="sm" className="flex-1" onClick={onView}>
-              View Details
-            </Button>
-            {testDrive.status === "Scheduled" ? (
-              <Button variant="destructive" size="sm" className="flex-1" onClick={onCancel}>
-                Cancel
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" className="flex-1" onClick={onDownload}>
-                Download
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
