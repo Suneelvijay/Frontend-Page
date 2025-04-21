@@ -50,6 +50,10 @@ export default function CustomerLayout({ children }) {
     })
   }
 
+  const onProfile = async () => {
+      router.push("/customer/profile")
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Mobile sidebar */}
@@ -234,7 +238,7 @@ export default function CustomerLayout({ children }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={onProfile}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>

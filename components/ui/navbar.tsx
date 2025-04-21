@@ -1,5 +1,3 @@
- 
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -38,14 +36,24 @@ export function Navbar() {
           </Link>
           
           {authenticated && user?.role === "USER" && (
-            <Link 
-              href="/customer/vehicles"
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname.startsWith("/customer") ? "text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              Vehicles
-            </Link>
+            <>
+              <Link 
+                href="/customer/vehicles"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  pathname.startsWith("/customer/vehicles") ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                Vehicles
+              </Link>
+              <Link 
+                href="/customer/quotes"
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  pathname.startsWith("/customer/quotes") ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                My Quotes
+              </Link>
+            </>
           )}
           
           {authenticated && user?.role === "DEALER" && (
@@ -75,7 +83,12 @@ export function Navbar() {
           {authenticated ? (
             <div className="flex items-center gap-4">
               <div className="text-sm font-medium hidden md:block">
-                Welcome, {user?.username || 'User'}
+                <Link 
+                  href="/customer/profile"
+                  className="hover:text-primary transition-colors"
+                >
+                  Welcome, {user?.username || 'User'}
+                </Link>
               </div>
               <LogoutButton />
             </div>

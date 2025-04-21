@@ -53,13 +53,23 @@ interface DemoRideRequest {
 }
 
 interface QuoteRequest {
-  vehicleId: string;
-  customerId?: string;
-  name: string;
-  email: string;
-  phone: string;
-  options?: string[];
+  vehicleId: number;
   notes?: string;
+}
+
+interface QuoteListRequest {
+  page: number;
+  size: number;
+}
+
+interface QuoteResponse {
+  id: number;
+  vehicleId: number;
+  vehicleName: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Vehicle {
@@ -116,7 +126,7 @@ const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {})
 export const authAPI = {
   // Register a new user
   register: async (userData: RegisterData): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/auth/register`, {
+    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -124,7 +134,7 @@ export const authAPI = {
   
   // Verify email OTP during registration
   verifyEmail: async (verifyData: VerifyEmailRequest): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/auth/verify-email`, {
+    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/verify-email`, {
       method: 'POST',
       body: JSON.stringify(verifyData),
     });
@@ -132,7 +142,7 @@ export const authAPI = {
   
   // Login user
   login: async (credentials: LoginCredentials): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/auth/login`, {
+    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -140,7 +150,7 @@ export const authAPI = {
   
   // Verify OTP during login
   verifyLogin: async (verifyData: VerifyLoginRequest): Promise<AuthResponse> => {
-    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/verify-login`, {
+    return fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/api/auth/verify-login`, {
       method: 'POST',
       body: JSON.stringify(verifyData),
     });
@@ -148,36 +158,9 @@ export const authAPI = {
 
   // Logout user
   logout: async (): Promise<void> => {
-    return fetchWithErrorHandling<void>(`${API_BASE_URL}/auth/logout`, {
+    return fetchWithErrorHandling<void>(`${API_BASE_URL}/api/auth/logout`, {
       method: 'POST',
       body: JSON.stringify({}),
-    });
-  }
-};
-
-/**
- * Vehicles API calls
- */
-export const vehiclesAPI = {
-  getAllVehicles: async (): Promise<Vehicle[]> => {
-    return fetchWithErrorHandling<Vehicle[]>(`${API_BASE_URL}/vehicles`);
-  },
-  
-  getVehicleById: async (id: string): Promise<Vehicle> => {
-    return fetchWithErrorHandling<Vehicle>(`${API_BASE_URL}/vehicles/${id}`);
-  },
-  
-  requestDemoRide: async (data: DemoRideRequest): Promise<{ id: string; message: string }> => {
-    return fetchWithErrorHandling<{ id: string; message: string }>(`${API_BASE_URL}/demo-rides`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-  
-  requestQuote: async (data: QuoteRequest): Promise<{ id: string; message: string }> => {
-    return fetchWithErrorHandling<{ id: string; message: string }>(`${API_BASE_URL}/quotes`, {
-      method: 'POST',
-      body: JSON.stringify(data),
     });
   }
 };
@@ -187,12 +170,57 @@ export const vehiclesAPI = {
  */
 export const customerAPI = {
   getProfile: async (): Promise<UserData> => {
-    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/customers/profile`);
+    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/user/profile`);
   },
   
   updateProfile: async (data: Partial<UserData>): Promise<UserData> => {
-    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/customers/profile`, {
+    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/user/profile`, {
       method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Quote Request APIs
+  createQuoteRequest: async (data: QuoteRequest): Promise<QuoteResponse> => {
+    return fetchWithErrorHandling<QuoteResponse>(`${API_BASE_URL}/user/quote`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getQuoteRequests: async (data: QuoteListRequest): Promise<{ content: QuoteResponse[], totalElements: number }> => {
+    return fetchWithErrorHandling<{ content: QuoteResponse[], totalElements: number }>(`${API_BASE_URL}/user/quote/list`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getQuoteRequestById: async (id: number): Promise<QuoteResponse> => {
+    return fetchWithErrorHandling<QuoteResponse>(`${API_BASE_URL}/user/quote/${id}`);
+  },
+
+  cancelQuoteRequest: async (id: number): Promise<void> => {
+    return fetchWithErrorHandling<void>(`${API_BASE_URL}/user/quote/${id}/cancel`, {
+      method: 'PUT',
+    });
+  }
+};
+
+/**
+ * Vehicles API calls
+ */
+export const vehiclesAPI = {
+  getAllVehicles: async (): Promise<Vehicle[]> => {
+    return fetchWithErrorHandling<Vehicle[]>(`${API_BASE_URL}/api/vehicles`);
+  },
+  
+  getVehicleById: async (id: string): Promise<Vehicle> => {
+    return fetchWithErrorHandling<Vehicle>(`${API_BASE_URL}/api/vehicles/${id}`);
+  },
+  
+  requestDemoRide: async (data: DemoRideRequest): Promise<{ id: string; message: string }> => {
+    return fetchWithErrorHandling<{ id: string; message: string }>(`${API_BASE_URL}/api/demo-rides`, {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   }
@@ -203,15 +231,15 @@ export const customerAPI = {
  */
 export const dealerAPI = {
   getDashboardStats: async (): Promise<Record<string, any>> => {
-    return fetchWithErrorHandling<Record<string, any>>(`${API_BASE_URL}/dealers/dashboard`);
+    return fetchWithErrorHandling<Record<string, any>>(`${API_BASE_URL}/api/dealers/dashboard`);
   },
   
   getInventory: async (): Promise<InventoryItem[]> => {
-    return fetchWithErrorHandling<InventoryItem[]>(`${API_BASE_URL}/dealers/inventory`);
+    return fetchWithErrorHandling<InventoryItem[]>(`${API_BASE_URL}/api/dealers/inventory`);
   },
   
   updateInventory: async (data: Partial<InventoryItem>): Promise<InventoryItem> => {
-    return fetchWithErrorHandling<InventoryItem>(`${API_BASE_URL}/dealers/inventory`, {
+    return fetchWithErrorHandling<InventoryItem>(`${API_BASE_URL}/api/dealers/inventory`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -223,10 +251,10 @@ export const dealerAPI = {
  */
 export const adminAPI = {
   getAllDealers: async (): Promise<UserData[]> => {
-    return fetchWithErrorHandling<UserData[]>(`${API_BASE_URL}/admin/dealers`);
+    return fetchWithErrorHandling<UserData[]>(`${API_BASE_URL}/api/admin/dealers`);
   },
   
   getAllCustomers: async (): Promise<UserData[]> => {
-    return fetchWithErrorHandling<UserData[]>(`${API_BASE_URL}/admin/customers`);
+    return fetchWithErrorHandling<UserData[]>(`${API_BASE_URL}/api/admin/customers`);
   }
 };

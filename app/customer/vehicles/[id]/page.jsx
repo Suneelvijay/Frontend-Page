@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -8,49 +8,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, FileText, ChevronLeft, ChevronRight } from "lucide-react"
-
-// Mock data for vehicle details
-const mockVehicleDetails = {
-  id: 1,
-  name: "Kia Seltos",
-  category: "SUV",
-  price: 1099000,
-  fuelType: "Petrol",
-  transmission: "Automatic",
-  engine: "1.5L Turbo",
-  power: "138 bhp",
-  torque: "242 Nm",
-  mileage: "16.5 kmpl",
-  seatingCapacity: 5,
-  colors: ["Galaxy Black", "Gravity Grey", "Aurora Black Pearl", "Intense Red"],
-  features: [
-    "10.25-inch Touchscreen Infotainment",
-    "Bose Premium Sound System",
-    "Ventilated Front Seats",
-    "360° Camera",
-    "Panoramic Sunroof",
-    "Air Purifier",
-    "Wireless Phone Charger",
-    "Drive Mode Select",
-    "LED Headlamps",
-    "Smart Key with Push Button Start",
-  ],
-  images: [
-    "/placeholder.svg?height=400&width=600",
-    "/placeholder.svg?height=400&width=600",
-    "/placeholder.svg?height=400&width=600",
-    "/placeholder.svg?height=400&width=600",
-  ],
-  description:
-    "The bold and dynamic Kia Seltos combines stunning design with cutting-edge technology. It's equipped with a powerful 1.5L Turbo engine that delivers exceptional performance while maintaining good fuel efficiency. The spacious interior offers premium comfort with ventilated seats, panoramic sunroof, and Bose sound system. Advanced safety features include 6 airbags, ABS with EBD, and Electronic Stability Control.",
-}
+import { Calendar, FileText, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "react-hot-toast"
+import { customerAPI } from "@/lib/api"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 export default function VehicleDetailsPage({ params }) {
   const router = useRouter()
   const vehicleId = params.id
-  const vehicle = mockVehicleDetails // In a real app, fetch vehicle by ID
+  const [vehicle, setVehicle] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [notes, setNotes] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [createdQuoteId, setCreatedQuoteId] = useState(null)
+
+  useEffect(() => {
+    const fetchVehicle = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          throw new Error("Authentication required")
+        }
+
+        const response = await fetch(`http://localhost:8080/api/vehicles/${vehicleId}`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch vehicle")
+        }
+
+        const data = await response.json()
+        setVehicle(data)
+      } catch (error) {
+        console.error("Error fetching vehicle:", error)
+        toast.error(error.message || "Failed to load vehicle")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchVehicle()
+  }, [vehicleId])
+
+  const handleCreateQuoteRequest = async () => {
+    try {
+      setIsSubmitting(true);
+      const response = await customerAPI.createQuoteRequest({
+        vehicleId: Number(params.id),
+        notes: notes
+      });
+      setCreatedQuoteId(response.id);
+      setShowConfirmation(true);
+    } catch (error) {
+      console.error("Error creating quote request:", error);
+      toast.error("Failed to create quote request");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleConfirmationClose = () => {
+    setShowConfirmation(false);
+    setNotes("");
+    setCreatedQuoteId(null);
+    router.push('/customer/quotes');
+  };
 
   // Format price to INR
   const formatPrice = (price) => {
@@ -62,11 +91,38 @@ export default function VehicleDetailsPage({ params }) {
   }
 
   const nextImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex === vehicle.images.length - 1 ? 0 : prevIndex + 1))
+    if (vehicle?.images) {
+      setCurrentImageIndex((prevIndex) => (prevIndex === vehicle.images.length - 1 ? 0 : prevIndex + 1))
+    }
   }
 
   const prevImage = () => {
-    setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? vehicle.images.length - 1 : prevIndex - 1))
+    if (vehicle?.images) {
+      setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? vehicle.images.length - 1 : prevIndex - 1))
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!vehicle) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Vehicle not found</h1>
+          <Link href="/customer/vehicles">
+            <Button variant="outline">Back to Vehicles</Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -86,12 +142,6 @@ export default function VehicleDetailsPage({ params }) {
               Book Test Drive
             </Button>
           </Link>
-          <Link href={`/customer/quotes/request?vehicleId=${vehicleId}`}>
-            <Button variant="outline" className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
-              Request Quote
-            </Button>
-          </Link>
         </div>
       </div>
 
@@ -100,57 +150,48 @@ export default function VehicleDetailsPage({ params }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Vehicle Images */}
         <div className="lg:col-span-2">
-          <Card className="overflow-hidden">
-            <div className="relative">
-              <Image
-                src={vehicle.images[currentImageIndex] || "/placeholder.svg"}
-                alt={vehicle.name}
-                width={600}
-                height={400}
-                className="w-full h-[300px] md:h-[400px] object-cover"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                onClick={prevImage}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-                onClick={nextImage}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="p-4 flex gap-2 overflow-x-auto">
-              {vehicle.images.map((image, index) => (
-                <Image
-                  key={index}
-                  src={image || "/placeholder.svg"}
-                  alt={`${vehicle.name} - Image ${index + 1}`}
-                  width={100}
-                  height={75}
-                  className={`w-20 h-16 object-cover cursor-pointer rounded ${
-                    index === currentImageIndex ? "ring-2 ring-red-600" : ""
-                  }`}
-                  onClick={() => setCurrentImageIndex(index)}
-                />
-              ))}
-            </div>
+          <Card>
+            <CardContent className="p-0">
+              <div className="relative aspect-video w-full">
+                {vehicle.image ? (
+                  <img
+                    src={`data:image/jpeg;base64,${vehicle.image}`}
+                    alt={vehicle.name}
+                    className="object-cover w-full h-full"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-gray-400">No image available</span>
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2"
+                  onClick={prevImage}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  onClick={nextImage}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
 
-        {/* Vehicle Info */}
-        <div className="lg:col-span-1">
+        {/* Vehicle Details and Quote Request */}
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <Badge className="bg-red-600 mb-2">{vehicle.category}</Badge>
+                  <Badge className="bg-red-600 mb-2">{vehicle.type}</Badge>
                   <h2 className="text-2xl font-bold">{formatPrice(vehicle.price)}</h2>
                   <p className="text-sm text-muted-foreground">Ex-showroom price</p>
                 </div>
@@ -163,52 +204,59 @@ export default function VehicleDetailsPage({ params }) {
                     <p className="font-medium">{vehicle.fuelType}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Transmission</p>
-                    <p className="font-medium">{vehicle.transmission}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Engine</p>
-                    <p className="font-medium">{vehicle.engine}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Power</p>
-                    <p className="font-medium">{vehicle.power}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Torque</p>
-                    <p className="font-medium">{vehicle.torque}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Mileage</p>
-                    <p className="font-medium">{vehicle.mileage}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Seating</p>
-                    <p className="font-medium">{vehicle.seatingCapacity} Seater</p>
+                    <p className="text-sm text-muted-foreground">Color</p>
+                    <p className="font-medium">{vehicle.color}</p>
                   </div>
                 </div>
 
                 <div className="pt-4">
-                  <p className="text-sm font-medium mb-2">Available Colors</p>
-                  <div className="flex flex-wrap gap-2">
-                    {vehicle.colors.map((color, index) => (
-                      <Badge key={index} variant="outline">
-                        {color}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4 flex gap-2">
-                  <Link href={`/customer/test-drives/book?vehicleId=${vehicleId}`} className="flex-1">
+                  <Link href={`/customer/test-drives/book?vehicleId=${vehicleId}`} className="block w-full">
                     <Button className="w-full bg-red-600 hover:bg-red-700">Book Test Drive</Button>
                   </Link>
-                  <Link href={`/customer/quotes/request?vehicleId=${vehicleId}`} className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      Request Quote
-                    </Button>
-                  </Link>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quote Request Form */}
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Get Detailed Quote</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Interested in this vehicle? Request a detailed quote with all specifications and pricing details.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="notes" className="text-sm font-medium">
+                    Additional Notes
+                  </label>
+                  <Textarea
+                    id="notes"
+                    placeholder="Any specific requirements or questions?"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+
+                <Button
+                  className="w-full bg-red-600 hover:bg-red-700"
+                  onClick={handleCreateQuoteRequest}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Request Quote
+                    </>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -228,7 +276,7 @@ export default function VehicleDetailsPage({ params }) {
           </TabsContent>
           <TabsContent value="features" className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {vehicle.features.map((feature, index) => (
+              {vehicle.features?.map((feature, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-red-600"></div>
                   <p>{feature}</p>
@@ -242,58 +290,12 @@ export default function VehicleDetailsPage({ params }) {
                 <h3 className="font-semibold mb-2">Engine & Transmission</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Engine Type</span>
-                    <span>{vehicle.engine}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Max Power</span>
-                    <span>{vehicle.power}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Max Torque</span>
-                    <span>{vehicle.torque}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Transmission</span>
-                    <span>{vehicle.transmission}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-muted-foreground">Fuel Type</span>
                     <span>{vehicle.fuelType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Mileage</span>
-                    <span>{vehicle.mileage}</span>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Dimensions & Capacity</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Seating Capacity</span>
-                    <span>{vehicle.seatingCapacity} Persons</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Length</span>
-                    <span>4,315 mm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Width</span>
-                    <span>1,800 mm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Height</span>
-                    <span>1,645 mm</span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Wheelbase</span>
-                    <span>2,610 mm</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Boot Space</span>
-                    <span>433 Liters</span>
+                    <span className="text-muted-foreground">Transmission</span>
+                    <span>{vehicle.transmission}</span>
                   </div>
                 </div>
               </div>
@@ -301,6 +303,31 @@ export default function VehicleDetailsPage({ params }) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Quote Request Created Successfully</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Your quote request has been submitted successfully. You will be notified once the dealer responds.
+            </p>
+            <div className="flex items-center gap-2 text-green-600">
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Request ID: {createdQuoteId}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleConfirmationClose} className="w-full bg-red-600 hover:bg-red-700">
+              View Quote Requests
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
