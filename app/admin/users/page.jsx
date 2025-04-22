@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Loader2, Trash2, UserPlus, Shield, ShieldAlert, Search, Check, X, History } from "lucide-react"
+import { ArrowLeft, Loader2, Trash2, UserPlus, Shield, ShieldAlert, Search, Check, X, History, Power } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -51,6 +51,7 @@ export default function UsersPage() {
   const [showPromoteDialog, setShowPromoteDialog] = useState(false)
   const [showDemoteDialog, setShowDemoteDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedRole, setSelectedRole] = useState("ALL")
@@ -367,6 +368,47 @@ export default function UsersPage() {
     }
   }
 
+  const handleStatusToggle = async (userId, currentStatus, targetStatus) => {
+    try {
+      const token = localStorage.getItem("authToken")
+      if (!token) {
+        throw new Error("Authentication required")
+      }
+
+      const newStatus = targetStatus || (currentStatus === "ACTIVE" ? "BLOCKED" : "ACTIVE")
+
+      const response = await fetch("http://localhost:8080/api/user/status", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: userId,
+          status: newStatus
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to update user status to ${newStatus}`)
+      }
+
+      // Update the users list with the new status
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { ...user, accountStatus: newStatus }
+          : user
+      ))
+
+      toast.success(`User status updated to ${newStatus.toLowerCase()} successfully`)
+      setShowStatusDialog(false)
+      setSelectedUser(null)
+    } catch (error) {
+      console.error("Error updating user status:", error)
+      toast.error(error.message || "Failed to update user status")
+    }
+  }
+
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case "APPROVED":
@@ -378,6 +420,14 @@ export default function UsersPage() {
       default:
         return "secondary"
     }
+  }
+
+  const getStatusButtonVariant = (status) => {
+    return status === "ACTIVE" ? "destructive" : "success"
+  }
+
+  const getStatusButtonText = (status) => {
+    return status === "ACTIVE" ? "Deactivate" : "Activate"
   }
 
   const handleApproveRequest = async (requestId) => {
@@ -681,73 +731,102 @@ export default function UsersPage() {
                                   {user.accountStatus}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  {user.role === "DEALER" && (
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-center space-x-2">
+                                  {/* Status management buttons for non-admin users */}
+                                  {user.role !== "ADMIN" && user.accountStatus !== "DEACTIVATED" && (
                                     <>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                                      {user.accountStatus === "ACTIVE" && (
+                                        <>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                              setSelectedUser(user)
+                                              setShowStatusDialog(true)
+                                            }}
+                                            title="Block User"
+                                          >
+                                            <Power className="h-4 w-4 mr-1" />
+                                            Block
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                              setSelectedUser({...user, targetStatus: "DEACTIVATED"})
+                                              setShowStatusDialog(true)
+                                            }}
+                                            title="Deactivate User"
+                                          >
+                                            <Power className="h-4 w-4 mr-1" />
+                                            Deactivate
+                                          </Button>
+                                        </>
+                                      )}
+                                      {user.accountStatus === "BLOCKED" && (
+                                        <>
+                                          <Button
+                                            variant="success"
+                                            size="sm"
+                                            onClick={() => {
+                                              setSelectedUser({...user, targetStatus: "ACTIVE"})
+                                              setShowStatusDialog(true)
+                                            }}
+                                            title="Activate User"
+                                            className="bg-green-600 hover:bg-green-700"
+                                          >
+                                            <Power className="h-4 w-4 mr-1" />
+                                            Activate
+                                          </Button>
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => {
+                                              setSelectedUser({...user, targetStatus: "DEACTIVATED"})
+                                              setShowStatusDialog(true)
+                                            }}
+                                            title="Deactivate User"
+                                          >
+                                            <Power className="h-4 w-4 mr-1" />
+                                            Deactivate
+                                          </Button>
+                                        </>
+                                      )}
+                                      {/* Promote button for non-admin users */}
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
                                         onClick={() => {
                                           setSelectedUser(user)
                                           setShowPromoteDialog(true)
                                         }}
                                       >
-                                        <Shield className="h-4 w-4" />
-                                    </Button>
-                                      <AlertDialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Promote to Admin</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Are you sure you want to promote {selectedUser?.fullName} to Admin role? 
-                                              This will give them full administrative access to the system.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handlePromoteToAdmin(selectedUser?.id)}>
-                                              Promote
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </>
-                                  )}
-                                  {user.role === "ADMIN" && (
-                                    <>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        onClick={() => {
-                                          setSelectedUser(user)
-                                          setShowDemoteDialog(true)
-                                        }}
-                                      >
-                                        <ShieldAlert className="h-4 w-4" />
+                                        <Shield className="h-4 w-4 mr-1" />
+                                        Promote
                                       </Button>
-                                      <AlertDialog open={showDemoteDialog} onOpenChange={setShowDemoteDialog}>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Demote to Dealer</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Are you sure you want to demote {selectedUser?.fullName} to Dealer role? 
-                                              This will remove their administrative privileges.
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDemoteToDealer(selectedUser?.id)}>
-                                              Demote
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
                                     </>
                                   )}
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
+                                  
+                                  {/* Demote button for admin users */}
+                                  {user.role === "ADMIN" && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedUser(user)
+                                        setShowPromoteDialog(true)
+                                      }}
+                                    >
+                                      <ShieldAlert className="h-4 w-4 mr-1" />
+                                      Demote to Dealer
+                                    </Button>
+                                  )}
+
+                                  {/* Delete button for all users */}
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
                                     onClick={() => {
                                       setSelectedUser(user)
                                       setShowDeleteDialog(true)
@@ -755,23 +834,6 @@ export default function UsersPage() {
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
-                                  <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete User</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete {selectedUser?.fullName}? 
-                                          This action cannot be undone and will permanently remove the user from the system.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(selectedUser?.id)}>
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -907,6 +969,81 @@ export default function UsersPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <AlertDialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedUser?.targetStatus || (selectedUser?.accountStatus === "ACTIVE" ? "Block" : "Activate")} User
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {selectedUser?.targetStatus?.toLowerCase() || (selectedUser?.accountStatus === "ACTIVE" ? "block" : "activate")} this user?
+              {selectedUser?.targetStatus === "DEACTIVATED" 
+                ? " This action cannot be undone." 
+                : selectedUser?.accountStatus === "ACTIVE"
+                ? " This will temporarily prevent them from accessing the system."
+                : " This will restore their access to the system."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleStatusToggle(selectedUser?.id, selectedUser?.accountStatus, selectedUser?.targetStatus)}
+              className={
+                selectedUser?.targetStatus === "ACTIVE"
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-destructive hover:bg-destructive/90"
+              }
+            >
+              {selectedUser?.targetStatus || (selectedUser?.accountStatus === "ACTIVE" ? "Block" : "Activate")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {selectedUser?.role === "ADMIN" ? "Demote from Admin" : "Promote to Admin"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {selectedUser?.role === "ADMIN" ? "demote this admin to dealer" : "promote this user to admin"}?
+              This will {selectedUser?.role === "ADMIN" ? "remove" : "grant"} them administrative privileges.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedUser?.role === "ADMIN" 
+                ? handleDemoteToDealer(selectedUser?.id)
+                : handlePromoteToAdmin(selectedUser?.id)
+              }
+            >
+              {selectedUser?.role === "ADMIN" ? "Demote" : "Promote"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(selectedUser?.id)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

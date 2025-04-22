@@ -106,11 +106,10 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen overflow-x-hidden">
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          
+        <div className="container flex h-16 items-center justify-between px-4">
           <nav className="hidden md:flex items-center gap-8 text-sm">
             <Link href="/" className="font-medium transition-colors hover:text-primary">
               Home
@@ -127,11 +126,12 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-2">
             <Image
-              src="/kialogo-removebg.png?height=40&width=120"
+              src="/kialogo-removebg.png"
               alt="Kia Logo"
               width={120}
               height={40}
               className="h-10 w-auto"
+              priority
             />
           </div>
           <div className="flex items-center gap-2">
@@ -147,104 +147,120 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Banner Section */}
-        <section className="w-full relative">
-          <Image
-            src="/hero-car.jpg?height=500&width=1920"
-            alt="Kia Banner"
-            width={1920}
-            height={500}
-            className="w-full h-[300px] md:h-[400px] lg:h-[500px] object-cover"
-          />
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <div className="text-center text-white p-4">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-                Welcome to Kia Dealer Management System
-              </h1>
-              <p className="text-lg md:text-xl max-w-3xl mx-auto">
-                Discover the perfect Kia vehicle for your lifestyle
-              </p>
+        <section className="relative w-full">
+          <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[500px] xl:h-[600px]">
+            <div className="absolute inset-0 w-full h-full">
+              <Image
+                src="/hero-car.jpg"
+                alt="Kia Banner"
+                fill
+                priority
+                className="object-cover object-center"
+                sizes="(max-width: 640px) 100vw,
+                       (max-width: 768px) 100vw,
+                       (max-width: 1024px) 100vw,
+                       (max-width: 1280px) 100vw,
+                       100vw"
+                style={{
+                  objectPosition: 'center 30%'
+                }}
+              />
+            </div>
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div className="container mx-auto px-4">
+                <div className="text-center text-white max-w-[90%] md:max-w-[80%] lg:max-w-[70%] mx-auto">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                    Welcome to Kia Dealer Management System
+                  </h1>
+                  <p className="text-base sm:text-lg md:text-xl max-w-3xl mx-auto">
+                    Discover the perfect Kia vehicle for your lifestyle
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Vehicles Section */}
-        <section className="w-full py-12 md:py-16 lg:py-20">
-          <div className="container px-4 md:px-6">
+        <section className="w-full py-8 md:py-12 lg:py-16">
+          <div className="container px-4">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-8">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">Our Vehicles</h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tighter">Our Vehicles</h2>
+              <p className="max-w-[900px] text-muted-foreground text-base md:text-lg">
                 Explore our range of stylish and innovative vehicles
               </p>
             </div>
 
             <div className="relative">
               <div className="overflow-hidden">
-              <div
+                <div
                   className="flex transition-transform duration-500 ease-in-out"
                   style={{ 
                     transform: `translateX(-${currentSlide * (isMobile ? 100 : 33.333)}%)` 
                   }}
                 >
                   {isLoading ? (
-                      Array(3).fill(0).map((_, index) => (
-                        <div key={index} className="min-w-full md:min-w-[33.333%] px-2">
-                          <Card className="w-full flex flex-col">
-                            <div className="relative h-[200px] bg-gray-200 animate-pulse rounded-t-lg"></div>
-                            <CardContent className="flex flex-col flex-grow p-4">
-                              <div className="h-6 bg-gray-200 animate-pulse rounded mb-1"></div>
-                              <div className="h-4 bg-gray-200 animate-pulse rounded mb-4 w-2/3"></div>
-                              <div className="mt-auto flex flex-col sm:flex-row gap-2">
-                                <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
-                                <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      ))
-                    ) : (
-                      vehicles.map((vehicle) => (
-                        <div key={vehicle.id} className="min-w-full md:min-w-[33.333%] px-2">
-                          <Card className="w-full flex flex-col">
-                            <div className="relative h-[200px]">
-                              <Image
-                                src={vehicle.image || "/placeholder.svg"}
-                                alt={vehicle.name}
-                                fill
-                                className="object-cover rounded-t-lg"
-                              />
+                    Array(3).fill(0).map((_, index) => (
+                      <div key={index} className="min-w-full md:min-w-[33.333%] px-2">
+                        <Card className="w-full flex flex-col">
+                          <div className="relative h-[200px] bg-gray-200 animate-pulse rounded-t-lg"></div>
+                          <CardContent className="flex flex-col flex-grow p-4">
+                            <div className="h-6 bg-gray-200 animate-pulse rounded mb-1"></div>
+                            <div className="h-4 bg-gray-200 animate-pulse rounded mb-4 w-2/3"></div>
+                            <div className="mt-auto flex flex-col sm:flex-row gap-2">
+                              <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
+                              <div className="h-9 bg-gray-200 animate-pulse rounded flex-1"></div>
                             </div>
-                            <CardContent className="flex flex-col flex-grow p-4">
-                              <h3 className="text-xl font-bold mb-1">{vehicle.name}</h3>
-                              <p className="text-muted-foreground mb-4">{vehicle.price}</p>
-                              <div className="mt-auto flex flex-col sm:flex-row gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="flex-1"
-                                  onClick={() => handleActionButtonClick("demo", vehicle.id)}
-                                >
-                                  Request Demo Ride
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="flex-1 bg-[#BB162B] hover:bg-[#A01020]"
-                                  onClick={() => handleActionButtonClick("quote", vehicle.id)}
-                                >
-                                  Get Quote
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      ))
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))
+                  ) : (
+                    vehicles.map((vehicle) => (
+                      <div key={vehicle.id} className="min-w-full md:min-w-[33.333%] px-2">
+                        <Card className="w-full h-full flex flex-col">
+                          <div className="relative aspect-[16/9]">
+                            <Image
+                              src={vehicle.image || "/placeholder.svg"}
+                              alt={vehicle.name}
+                              fill
+                              className="object-cover rounded-t-lg"
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                            />
+                          </div>
+                          <CardContent className="flex flex-col flex-grow p-4">
+                            <h3 className="text-lg md:text-xl font-bold mb-1">{vehicle.name}</h3>
+                            <p className="text-muted-foreground mb-4">{vehicle.price}</p>
+                            <div className="mt-auto flex flex-col sm:flex-row gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => handleActionButtonClick("demo", vehicle.id)}
+                              >
+                                Request Demo Ride
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-[#BB162B] hover:bg-[#A01020]"
+                                onClick={() => handleActionButtonClick("quote", vehicle.id)}
+                              >
+                                Get Quote
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>
 
+              {/* Navigation Buttons */}
               <Button
                 variant="outline"
                 size="icon"
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 md:-translate-x-0 rounded-full bg-white/80 hover:bg-white"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 md:-translate-x-4 rounded-full bg-white/80 hover:bg-white z-10"
                 onClick={prevSlide}
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -253,16 +269,20 @@ export default function LandingPage() {
               <Button
                 variant="outline"
                 size="icon"
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 md:translate-x-0 rounded-full bg-white/80 hover:bg-white"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 md:translate-x-4 rounded-full bg-white/80 hover:bg-white z-10"
                 onClick={nextSlide}
               >
                 <ChevronRight className="h-6 w-6" />
               </Button>
+
+              {/* Pagination Dots */}
               <div className="flex justify-center mt-4 gap-1">
                 {Array.from({ length: isMobile ? vehicles.length : totalSlides }).map((_, index) => (
                   <button
                     key={index}
-                    className={`h-2 w-2 rounded-full ${currentSlide === index ? "bg-[#BB162B]" : "bg-gray-300"}`}
+                    className={`h-2 w-2 rounded-full transition-colors ${
+                      currentSlide === index ? "bg-[#BB162B]" : "bg-gray-300"
+                    }`}
                     onClick={() => setCurrentSlide(index)}
                   />
                 ))}
@@ -400,7 +420,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="w-full border-t bg-[#05141F] text-white">
-        <div className="container py-6 md:py-8">
+        <div className="container py-6">
           <div className="text-center">
             <p>© {new Date().getFullYear()} Kia India. All Rights Reserved.</p>
             <p className="text-sm mt-1 text-gray-400">Version 1.0.0</p>
