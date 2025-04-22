@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label"
 import { OTPDialog } from "@/components/ui/otp-dialog"
 import { toast } from "sonner"
+import { Eye, EyeOff } from "lucide-react"
+import { ActiveSessionDialog } from "@/components/ui/active-session-dialog"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,19 +22,16 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [showOTPDialog, setShowOTPDialog] = useState(false)
   const [userEmail, setUserEmail] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showActiveSessionDialog, setShowActiveSessionDialog] = useState(false)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target
     setFormData(prev => ({ ...prev, [id]: value }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
+  const handleLogin = async (forceLogin = false) => {
     try {
-      // Step 1: First login request
       const response = await fetch("http://localhost:8080/api/auth/login", {
         method: "POST",
         headers: {
@@ -41,12 +40,27 @@ export default function LoginPage() {
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
+          ...(forceLogin && { forceLogin: true }),
         }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
+        // Handle account expiration error
+        if (data.error && data.error.includes("Your account has expired")) {
+          throw new Error(data.error)
+        }
+        // Handle account lock error
+        if (data.error && data.error.includes("Account is temporarily blocked")) {
+          const remainingTime = data.remainingBlockTime
+          throw new Error(`Account is temporarily blocked. Please try again after ${remainingTime} minutes.`)
+        }
+        // Handle active session error
+        if (response.status === 409 && data.hasActiveSession) {
+          setShowActiveSessionDialog(true)
+          return
+        }
         throw new Error(data.message || "Login failed")
       }
 
@@ -58,10 +72,23 @@ export default function LoginPage() {
       toast.success("OTP has been sent to your email")
     } catch (err: any) {
       setError(err.message || "Login failed")
-      toast.error("Login failed. Please check your credentials.")
+      toast.error(err.message || "Login failed. Please check your credentials.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+    await handleLogin()
+  }
+
+  const handleForceLogin = async () => {
+    setShowActiveSessionDialog(false)
+    setIsLoading(true)
+    await handleLogin(true)
   }
 
   const handleVerifyOTP = async (otp: string) => {
@@ -149,13 +176,31 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                value={formData.password}
-                onChange={handleInputChange}
-                required 
-              />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required 
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-500" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword ? "Hide password" : "Show password"}
+                  </span>
+                </Button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
@@ -178,6 +223,12 @@ export default function LoginPage() {
         onClose={() => setShowOTPDialog(false)}
         onVerify={handleVerifyOTP}
         isLogin={true}
+      />
+
+      <ActiveSessionDialog
+        isOpen={showActiveSessionDialog}
+        onClose={() => setShowActiveSessionDialog(false)}
+        onConfirm={handleForceLogin}
       />
     </div>
   )

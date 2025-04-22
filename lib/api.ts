@@ -86,13 +86,25 @@ interface InventoryItem extends Vehicle {
   dealerId: string;
 }
 
+import { isTokenExpired, handleLogout } from './auth-utils'
+import { toast } from 'sonner'
+
 /**
  * Wrapper for fetch with error handling
  */
-const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {}): Promise<T> => {
+const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {}, router?: any): Promise<T> => {
   try {
     // Get auth token from localStorage if available
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    
+    // Check if token is expired
+    if (token && isTokenExpired(token)) {
+      await handleLogout(() => {
+        router?.push("/")
+        toast.error("Your session has expired. Please log in again.")
+      })
+      throw new Error("Session expired")
+    }
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -106,11 +118,29 @@ const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {})
     });
 
     // Parse JSON response if possible
-    const data = await response.json().catch(() => ({})) as T & { message?: string };
+    const data = await response.json().catch(() => ({})) as T & { message?: string, error?: string };
+
+    // Handle 401 Unauthorized responses
+    if (response.status === 401) {
+      // Check if it's an account expiration error
+      if (data.error && data.error.includes("Your account has expired")) {
+        await handleLogout(() => {
+          router?.push("/")
+          toast.error(data.error || "Your account has expired. Please contact support to extend your account.")
+        })
+        throw new Error(data.error)
+      }
+      // Handle regular session expiration
+      await handleLogout(() => {
+        router?.push("/")
+        toast.error("Your session has expired. Please log in again.")
+      })
+      throw new Error("Session expired")
+    }
 
     // Handle API error responses
     if (!response.ok) {
-      throw new Error(data.message || `Error: ${response.status}`);
+      throw new Error(data.message || data.error || `Error: ${response.status}`);
     }
 
     return data;
