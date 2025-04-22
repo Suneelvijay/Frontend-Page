@@ -76,10 +76,10 @@ const dealerApi = {
     }
   },
 
-  getTestDriveRequests: async (page = 0, size = 5, status = 'ALL') => {
+  getTestDriveRequests: async (page = 0, size = 10, status = 'ALL') => {
     try {
       const token = getAuthToken();
-      const response = await axios.post(`${API_BASE_URL}/test-drive-requests`, {
+      const response = await axios.post(`${API_BASE_URL}/test-drive-requests/list`, {
         page,
         size,
         ...(status !== 'ALL' && { status })
@@ -163,10 +163,10 @@ const dealerApi = {
     }
   },
 
-  getQuoteRequests: async (page = 0, size = 5, status = 'ALL') => {
+  getQuoteRequests: async (page = 0, size = 10, status = 'ALL') => {
     try {
       const token = getAuthToken();
-      const response = await axios.post(`${API_BASE_URL}/quote-requests`, {
+      const response = await axios.post(`${API_BASE_URL}/quote-requests/list`, {
         page,
         size,
         ...(status !== 'ALL' && { status })
@@ -248,7 +248,7 @@ const dealerApi = {
       if (error.response?.status === 401) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userData');
-        window.location.href = '/login';
+        window.location.href = '/';
       }
       throw error;
     }

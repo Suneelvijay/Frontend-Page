@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Search, Download } from "lucide-react";
+import { MoreHorizontal, Search, Download, ArrowUpDown } from "lucide-react";
 import dealerApi from '@/app/api/dealer';
 import { format } from 'date-fns';
 import { Input } from "@/components/ui/input";
@@ -29,33 +29,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useRouter } from "next/navigation";
 
 export default function TestDrives() {
   const { toast } = useToast();
+  const router = useRouter();
   const [testDrives, setTestDrives] = useState([]);
+  const [filteredTestDrives, setFilteredTestDrives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
 
   useEffect(() => {
     fetchTestDrives();
   }, [currentPage, pageSize, statusFilter]);
 
+  useEffect(() => {
+    // Filter and sort test drives
+    let filtered = [...testDrives];
+    
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
+      const searchLower = searchQuery.toLowerCase();
+      filtered = filtered.filter(request => 
+        request.userName?.toLowerCase().includes(searchLower) ||
+        request.userEmail?.toLowerCase().includes(searchLower) ||
+        request.vehicleName?.toLowerCase().includes(searchLower) ||
+        request.notes?.toLowerCase().includes(searchLower) ||
+        formatDate(request.requestedDate).toLowerCase().includes(searchLower) ||
+        request.status?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.requestedDate);
+      const dateB = new Date(b.requestedDate);
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+
+    setFilteredTestDrives(filtered);
+  }, [searchQuery, testDrives, sortOrder]);
+
   const fetchTestDrives = async () => {
     try {
+      setLoading(true);
       const response = await dealerApi.getTestDriveRequests(currentPage, pageSize, statusFilter);
       setTestDrives(response.content);
       setTotalPages(response.totalPages);
-      setLoading(false);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to fetch test drive requests",
         variant: "destructive",
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -65,7 +98,7 @@ export default function TestDrives() {
       await dealerApi.updateTestDriveStatus(requestId, status);
       toast({
         title: "Success",
-        description: `Test drive request ${status.toLowerCase()} successfully`,
+        description: "Test drive status updated successfully",
       });
       fetchTestDrives();
     } catch (error) {
@@ -88,10 +121,6 @@ export default function TestDrives() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast({
-        title: "Success",
-        description: "Test drives downloaded successfully",
-      });
     } catch (error) {
       toast({
         title: "Error",
@@ -113,23 +142,39 @@ export default function TestDrives() {
     }
   };
 
-  const filteredTestDrives = testDrives.filter(request => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      request.userName.toLowerCase().includes(searchLower) ||
-      request.userEmail.toLowerCase().includes(searchLower) ||
-      request.vehicleName.toLowerCase().includes(searchLower) ||
-      (request.notes && request.notes.toLowerCase().includes(searchLower))
-    );
-  });
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return 'warning';
+      case 'APPROVED':
+        return 'success';
+      case 'REJECTED':
+        return 'destructive';
+      case 'CANCELLED':
+        return 'secondary';
+      default:
+        return 'default';
+    }
+  };
 
   const handlePageSizeChange = (value) => {
-    setPageSize(value === 'all' ? 1000 : parseInt(value));
-    setCurrentPage(0);
+    const newSize = value === 'all' ? 1000 : parseInt(value);
+    setPageSize(newSize);
+    setCurrentPage(0); // Reset to first page when changing page size
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -150,7 +195,7 @@ export default function TestDrives() {
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, email, vehicle, or notes..."
+                  placeholder="Search by name, email, vehicle, notes, date, or status..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -166,6 +211,7 @@ export default function TestDrives() {
                     <SelectItem value="PENDING">Pending</SelectItem>
                     <SelectItem value="APPROVED">Approved</SelectItem>
                     <SelectItem value="REJECTED">Rejected</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
@@ -187,58 +233,63 @@ export default function TestDrives() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Customer</TableHead>
                 <TableHead>Vehicle</TableHead>
-                <TableHead>Requested Date</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={toggleSortOrder}
+                    className="flex items-center gap-1"
+                  >
+                    Requested Date
+                    <ArrowUpDown className="h-4 w-4" />
+                  </Button>
+                </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTestDrives.map((request) => (
                 <TableRow key={request.id}>
-                  <TableCell>{request.userName}</TableCell>
-                  <TableCell>{request.userEmail}</TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{request.userName}</p>
+                      <p className="text-sm text-muted-foreground">{request.userEmail}</p>
+                    </div>
+                  </TableCell>
                   <TableCell>{request.vehicleName}</TableCell>
                   <TableCell>{formatDate(request.requestedDate)}</TableCell>
                   <TableCell>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        request.status === 'PENDING'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : request.status === 'APPROVED'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
+                    <Badge variant={getStatusBadgeVariant(request.status)}>
                       {request.status}
-                    </span>
+                    </Badge>
                   </TableCell>
-                  <TableCell>{request.notes || '-'}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/dealer/test-drives/${request.id}`)}>
+                          View Details
+                        </DropdownMenuItem>
                         {request.status === 'PENDING' && (
                           <>
-                            <DropdownMenuItem
-                              onClick={() => handleStatusUpdate(request.id, 'APPROVED')}
-                            >
+                            <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'APPROVED')}>
                               Approve
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleStatusUpdate(request.id, 'REJECTED')}
-                            >
+                            <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'REJECTED')}>
                               Reject
                             </DropdownMenuItem>
                           </>
+                        )}
+                        {request.status === 'APPROVED' && (
+                          <DropdownMenuItem onClick={() => handleStatusUpdate(request.id, 'CANCELLED')}>
+                            Cancel
+                          </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -247,26 +298,36 @@ export default function TestDrives() {
               ))}
             </TableBody>
           </Table>
+          
+          {filteredTestDrives.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchQuery ? 'No test drive requests match your search' : 'No test drive requests found'}
+            </div>
+          )}
 
-          <div className="flex justify-between items-center mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
-            >
-              Previous
-            </Button>
-            <span>
-              Page {currentPage + 1} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage === totalPages - 1}
-            >
-              Next
-            </Button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-muted-foreground">
+                Page {currentPage + 1} of {totalPages}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                  disabled={currentPage === 0}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                  disabled={currentPage === totalPages - 1}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
