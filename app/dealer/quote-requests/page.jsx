@@ -30,9 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export default function TestDrives() {
+export default function QuoteRequests() {
   const { toast } = useToast();
-  const [testDrives, setTestDrives] = useState([]);
+  const [quoteRequests, setQuoteRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -41,37 +41,37 @@ export default function TestDrives() {
   const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
-    fetchTestDrives();
+    fetchQuoteRequests();
   }, [currentPage, pageSize, statusFilter]);
 
-  const fetchTestDrives = async () => {
+  const fetchQuoteRequests = async () => {
     try {
-      const response = await dealerApi.getTestDriveRequests(currentPage, pageSize, statusFilter);
-      setTestDrives(response.content);
+      const response = await dealerApi.getQuoteRequests(currentPage, pageSize, statusFilter);
+      setQuoteRequests(response.content);
       setTotalPages(response.totalPages);
       setLoading(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch test drive requests",
+        description: "Failed to fetch quote requests",
         variant: "destructive",
       });
       setLoading(false);
     }
   };
 
-  const handleStatusUpdate = async (requestId, status) => {
+  const handleStatusUpdate = async (requestId, status, quotedPrice, adminResponse) => {
     try {
-      await dealerApi.updateTestDriveStatus(requestId, status);
+      await dealerApi.updateQuoteRequest(requestId, status, quotedPrice, adminResponse);
       toast({
         title: "Success",
-        description: `Test drive request ${status.toLowerCase()} successfully`,
+        description: `Quote request ${status.toLowerCase()} successfully`,
       });
-      fetchTestDrives();
+      fetchQuoteRequests();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update test drive status",
+        description: "Failed to update quote request",
         variant: "destructive",
       });
     }
@@ -79,23 +79,23 @@ export default function TestDrives() {
 
   const handleDownload = async () => {
     try {
-      const blob = await dealerApi.downloadTestDrives();
+      const blob = await dealerApi.downloadQuoteRequests();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'test-drives.csv';
+      a.download = 'quote-requests.csv';
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast({
         title: "Success",
-        description: "Test drives downloaded successfully",
+        description: "Quote requests downloaded successfully",
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to download test drives",
+        description: "Failed to download quote requests",
         variant: "destructive",
       });
     }
@@ -113,13 +113,13 @@ export default function TestDrives() {
     }
   };
 
-  const filteredTestDrives = testDrives.filter(request => {
+  const filteredRequests = quoteRequests.filter(request => {
     const searchLower = searchQuery.toLowerCase();
     return (
-      request.userName.toLowerCase().includes(searchLower) ||
-      request.userEmail.toLowerCase().includes(searchLower) ||
-      request.vehicleName.toLowerCase().includes(searchLower) ||
-      (request.notes && request.notes.toLowerCase().includes(searchLower))
+      (request.userName?.toLowerCase() || '').includes(searchLower) ||
+      (request.userFullName?.toLowerCase() || '').includes(searchLower) ||
+      (request.vehicleName?.toLowerCase() || '').includes(searchLower) ||
+      (request.notes?.toLowerCase() || '').includes(searchLower)
     );
   });
 
@@ -135,7 +135,7 @@ export default function TestDrives() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Test Drive Requests</h1>
+        <h1 className="text-2xl font-bold">Quote Requests</h1>
         <Button onClick={handleDownload}>
           <Download className="mr-2 h-4 w-4" />
           Download CSV
@@ -188,21 +188,22 @@ export default function TestDrives() {
             <TableHeader>
               <TableRow>
                 <TableHead>Customer Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Full Name</TableHead>
                 <TableHead>Vehicle</TableHead>
                 <TableHead>Requested Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Quoted Price</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTestDrives.map((request) => (
+              {filteredRequests.map((request) => (
                 <TableRow key={request.id}>
                   <TableCell>{request.userName}</TableCell>
-                  <TableCell>{request.userEmail}</TableCell>
+                  <TableCell>{request.userFullName}</TableCell>
                   <TableCell>{request.vehicleName}</TableCell>
-                  <TableCell>{formatDate(request.requestedDate)}</TableCell>
+                  <TableCell>{formatDate(request.createdAt)}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -215,6 +216,9 @@ export default function TestDrives() {
                     >
                       {request.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    {request.quotedPrice ? `$${request.quotedPrice}` : '-'}
                   </TableCell>
                   <TableCell>{request.notes || '-'}</TableCell>
                   <TableCell>
@@ -229,12 +233,12 @@ export default function TestDrives() {
                         {request.status === 'PENDING' && (
                           <>
                             <DropdownMenuItem
-                              onClick={() => handleStatusUpdate(request.id, 'APPROVED')}
+                              onClick={() => handleStatusUpdate(request.id, 'APPROVED', 50000, 'Your quote has been approved')}
                             >
                               Approve
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleStatusUpdate(request.id, 'REJECTED')}
+                              onClick={() => handleStatusUpdate(request.id, 'REJECTED', null, 'Your quote has been rejected')}
                             >
                               Reject
                             </DropdownMenuItem>
@@ -271,4 +275,4 @@ export default function TestDrives() {
       </Card>
     </div>
   );
-}
+} 

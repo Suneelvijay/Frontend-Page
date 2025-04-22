@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, Shield } from "lucide-react"
+import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, Shield, Home, CarFront } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -15,6 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useToast } from "@/components/ui/use-toast"
+import dealerApi from '@/app/api/dealer'
 
 const navItems = [
   { name: "Dashboard", href: "/dealer", icon: BarChart3 },
@@ -31,8 +33,11 @@ const navItems = [
 export default function DealerLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
+  const { toast } = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState({ username: "Dealer Name", email: "dealer@kia.com" })
+  const [dealerInfo, setDealerInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
   
   // Get user data on component mount
   useEffect(() => {
@@ -50,10 +55,92 @@ export default function DealerLayout({ children }) {
     }
   }, [])
   
-  const onLogout = async () => {
-    await handleLogout(() => {
-      router.push("/")
-    })
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('authToken')
+      const userData = localStorage.getItem('userData')
+      
+      if (!token || !userData) {
+        router.push('/login')
+        return
+      }
+
+      const parsedUserData = JSON.parse(userData)
+      if (parsedUserData.role !== 'DEALER') {
+        toast({
+          title: "Error",
+          description: "Unauthorized access",
+          variant: "destructive",
+        })
+        router.push('/login')
+        return
+      }
+
+      await fetchDealerProfile()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Please login to continue",
+        variant: "destructive",
+      })
+      router.push('/login')
+    }
+  }
+
+  const fetchDealerProfile = async () => {
+    try {
+      const data = await dealerApi.getProfile()
+      setDealerInfo(data)
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
+      if (error.response?.status === 401) {
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('userData')
+        router.push('/login')
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch dealer profile",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken')
+    localStorage.removeItem('userData')
+    router.push('/login')
+  }
+
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/dealer",
+      icon: Calendar,
+      current: pathname === "/dealer",
+    },
+    {
+      name: "Test Drives",
+      href: "/dealer/test-drives",
+      icon: Car,
+      current: pathname === "/dealer/test-drives",
+    },
+    {
+      name: "Profile",
+      href: "/dealer/profile",
+      icon: User,
+      current: pathname === "/dealer/profile",
+    },
+  ]
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>
   }
 
   return (
@@ -77,7 +164,7 @@ export default function DealerLayout({ children }) {
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-2">
-              {navItems.map((item) => {
+              {navigation.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                 return (
                   <Link
@@ -108,26 +195,42 @@ export default function DealerLayout({ children }) {
             <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
           </div>
           <div className="mt-5 flex flex-grow flex-col">
-            <nav className="flex-1 space-y-1 px-2 pb-4">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                      isActive ? "bg-gray-100 text-gray-900" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
-                  >
-                    <item.icon
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                        isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
-                      }`}
-                    />
-                    {item.name}
-                  </Link>
-                )
-              })}
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              <Link
+                href="/dealer"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Home className="h-4 w-4" />
+                Dashboard
+              </Link>
+              <Link
+                href="/dealer/test-drives"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <CarFront className="h-4 w-4" />
+                Test Drives
+              </Link>
+              <Link
+                href="/dealer/quote-requests"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <FileText className="h-4 w-4" />
+                Quote Requests
+              </Link>
+              <Link
+                href="/dealer/admin-requests"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <Shield className="h-4 w-4" />
+                Admin Requests
+              </Link>
+              <Link
+                href="/dealer/profile"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              >
+                <User className="h-4 w-4" />
+                Profile
+              </Link>
             </nav>
           </div>
         </div>
@@ -221,7 +324,7 @@ export default function DealerLayout({ children }) {
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={onLogout}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
