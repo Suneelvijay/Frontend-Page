@@ -452,9 +452,9 @@ export default function UsersPage() {
         })
       })
 
-      const result = await response.json().catch(() => null)
+      const result = await response.json()
       
-      if (result?.status === "APPROVED" || response.ok) {
+      if (response.ok || result?.status === "APPROVED") {
         toast.success("Request approved successfully")
         setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
         
@@ -497,9 +497,9 @@ export default function UsersPage() {
         })
       })
 
-      const result = await response.json().catch(() => null)
+      const result = await response.json()
       
-      if (result?.status === "REJECTED" || response.ok) {
+      if (response.ok || result?.status === "REJECTED") {
         toast.success("Request denied successfully")
         setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
         
@@ -900,11 +900,11 @@ export default function UsersPage() {
                       ) : (
                         pendingRequests.map((request) => (
                             <TableRow key={request.id}>
-                            <TableCell>{request.user.fullName}</TableCell>
-                            <TableCell>{request.user.email}</TableCell>
+                            <TableCell>{request.userName || 'N/A'}</TableCell>
+                            <TableCell>{request.userEmail || 'N/A'}</TableCell>
                               <TableCell>
-                              <Badge variant={getRoleBadgeVariant(request.user.role)}>
-                                {request.user.role}
+                              <Badge variant={getRoleBadgeVariant(request.userRole || 'CUSTOMER')}>
+                                {request.userRole || 'CUSTOMER'}
                               </Badge>
                               </TableCell>
                               <TableCell>
@@ -972,14 +972,14 @@ export default function UsersPage() {
                       ) : (
                         requestHistory.map((request) => (
                           <TableRow key={request.id}>
-                            <TableCell>{request.user.fullName}</TableCell>
-                            <TableCell>{request.user.email}</TableCell>
+                            <TableCell>{request.userName || 'N/A'}</TableCell>
+                            <TableCell>{request.userEmail || 'N/A'}</TableCell>
                             <TableCell>
                               <Badge variant={getStatusBadgeVariant(request.status)}>
                                 {request.status}
                               </Badge>
                             </TableCell>
-                            <TableCell>{request.response}</TableCell>
+                            <TableCell>{request.response || 'N/A'}</TableCell>
                             <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
                           </TableRow>
                         ))

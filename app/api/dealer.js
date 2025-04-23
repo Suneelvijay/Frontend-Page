@@ -143,13 +143,14 @@ const dealerApi = {
     }
   },
 
-  downloadTestDrives: async () => {
+  downloadTestDrives: async (transpose = false) => {
     try {
       const token = getAuthToken();
       const response = await axios.get(`${API_BASE_URL}/test-drives/download`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        params: { transpose },
         responseType: 'blob',
       });
       return response.data;

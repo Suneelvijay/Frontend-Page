@@ -231,7 +231,6 @@ export default function AddVehiclePage() {
                 <Label htmlFor="type">Vehicle Type</Label>
                 <Select 
                   onValueChange={(value) => handleSelectChange("type", value)}
-                  defaultValue="SUV"
                 >
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Select vehicle type" />

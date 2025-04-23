@@ -31,6 +31,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function TestDrives() {
   const { toast } = useToast();
@@ -44,6 +52,8 @@ export default function TestDrives() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [pageSize, setPageSize] = useState(10);
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState('normal');
 
   useEffect(() => {
     fetchTestDrives();
@@ -112,7 +122,7 @@ export default function TestDrives() {
 
   const handleDownload = async () => {
     try {
-      const blob = await dealerApi.downloadTestDrives();
+      const blob = await dealerApi.downloadTestDrives(downloadFormat === 'transposed');
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -121,6 +131,7 @@ export default function TestDrives() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      setShowDownloadDialog(false);
     } catch (error) {
       toast({
         title: "Error",
@@ -181,12 +192,43 @@ export default function TestDrives() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Test Drive Requests</h1>
-        <Button onClick={handleDownload}>
+        <Button onClick={() => setShowDownloadDialog(true)}>
           <Download className="mr-2 h-4 w-4" />
           Download CSV
         </Button>
       </div>
       
+      {/* Download Format Dialog */}
+      <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Download Format</DialogTitle>
+            <DialogDescription>
+              Choose how you want to download the test drive data
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select value={downloadFormat} onValueChange={setDownloadFormat}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal Format</SelectItem>
+                <SelectItem value="transposed">Transposed Format</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDownload}>
+              Download
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4">
