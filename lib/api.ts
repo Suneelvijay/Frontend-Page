@@ -241,11 +241,11 @@ export const customerAPI = {
  */
 export const vehiclesAPI = {
   getAllVehicles: async (): Promise<Vehicle[]> => {
-    return fetchWithErrorHandling<Vehicle[]>(`${API_BASE_URL}/api/vehicles`);
+    return fetchWithErrorHandling<Vehicle[]>(`${API_BASE_URL}/vehicles`);
   },
   
   getVehicleById: async (id: string): Promise<Vehicle> => {
-    return fetchWithErrorHandling<Vehicle>(`${API_BASE_URL}/api/vehicles/${id}`);
+    return fetchWithErrorHandling<Vehicle>(`${API_BASE_URL}/vehicles/${id}`);
   },
   
   requestDemoRide: async (data: DemoRideRequest): Promise<{ id: string; message: string }> => {
