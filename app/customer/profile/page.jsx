@@ -22,9 +22,8 @@ import { Switch } from "@/components/ui/switch"
 import { Eye, EyeOff, User, Mail, Lock, Shield } from "lucide-react"
 import { toast } from "sonner"
 import { customerAPI } from "@/lib/api"
-import { withAuth } from '@/lib/withAuth'
 
-function CustomerProfilePage() {
+export default function ProfilePage() {
   const router = useRouter()
   const [userData, setUserData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -420,5 +419,3 @@ function CustomerProfilePage() {
     </div>
   )
 }
-
-export default withAuth(CustomerProfilePage, ['CUSTOMER'])

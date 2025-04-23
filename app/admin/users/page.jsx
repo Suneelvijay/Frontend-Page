@@ -38,9 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { withAuth } from '@/lib/withAuth'
 
-function UsersPage() {
+export default function UsersPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [users, setUsers] = useState([])
@@ -737,12 +736,115 @@ function UsersPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                {user.email === "suneelvijay8@gmail.com" ? (
-                                  <span className="text-muted-foreground">System Admin</span>
-                                ) : (
-                                  <div className="flex space-x-2">
-                                    {/* For deactivated accounts, only show delete button */}
-                                    {user.accountStatus === "DEACTIVATED" ? (
+                                <div className="flex space-x-2">
+                                  {/* For deactivated accounts, only show delete button */}
+                                  {user.accountStatus === "DEACTIVATED" ? (
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedUser(user)
+                                        setShowDeleteDialog(true)
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  ) : (
+                                    <>
+                                      {/* Status management buttons for non-admin users */}
+                                      {user.role !== "ADMIN" && (
+                                        <>
+                                          {user.accountStatus === "ACTIVE" && (
+                                            <>
+                                              <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setSelectedUser(user)
+                                                  setShowStatusDialog(true)
+                                                }}
+                                                title="Block User"
+                                              >
+                                                <Power className="h-4 w-4 mr-1" />
+                                                Block
+                                              </Button>
+                                              <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setSelectedUser({...user, targetStatus: "DEACTIVATED"})
+                                                  setShowStatusDialog(true)
+                                                }}
+                                                title="Deactivate User"
+                                              >
+                                                <Power className="h-4 w-4 mr-1" />
+                                                Deactivate
+                                              </Button>
+                                            </>
+                                          )}
+                                          {user.accountStatus === "BLOCKED" && (
+                                            <>
+                                              <Button
+                                                variant="success"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setSelectedUser({...user, targetStatus: "ACTIVE"})
+                                                  setShowStatusDialog(true)
+                                                }}
+                                                title="Activate User"
+                                                className="bg-green-600 hover:bg-green-700"
+                                              >
+                                                <Power className="h-4 w-4 mr-1" />
+                                                Activate
+                                              </Button>
+                                              <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => {
+                                                  setSelectedUser({...user, targetStatus: "DEACTIVATED"})
+                                                  setShowStatusDialog(true)
+                                                }}
+                                                title="Deactivate User"
+                                              >
+                                                <Power className="h-4 w-4 mr-1" />
+                                                Deactivate
+                                              </Button>
+                                            </>
+                                          )}
+                                        </>
+                                      )}
+                                      
+                                      {/* Promote button only for dealers */}
+                                      {user.role === "DEALER" && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setSelectedUser(user)
+                                            setShowPromoteDialog(true)
+                                          }}
+                                        >
+                                          <Shield className="h-4 w-4 mr-1" />
+                                          Promote to Admin
+                                        </Button>
+                                      )}
+                                      
+                                      {/* Demote button only for admin users */}
+                                      {user.role === "ADMIN" && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setSelectedUser(user)
+                                            setShowDemoteDialog(true)
+                                          }}
+                                        >
+                                          <ShieldAlert className="h-4 w-4 mr-1" />
+                                          Demote to Dealer
+                                        </Button>
+                                      )}
+
+                                      {/* Delete button for active accounts */}
                                       <Button
                                         variant="destructive"
                                         size="sm"
@@ -753,116 +855,9 @@ function UsersPage() {
                                       >
                                         <Trash2 className="h-4 w-4" />
                                       </Button>
-                                    ) : (
-                                      <>
-                                        {/* Status management buttons for non-admin users */}
-                                        {user.role !== "ADMIN" && (
-                                          <>
-                                            {user.accountStatus === "ACTIVE" && (
-                                              <>
-                                                <Button
-                                                  variant="destructive"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setSelectedUser(user)
-                                                    setShowStatusDialog(true)
-                                                  }}
-                                                  title="Block User"
-                                                >
-                                                  <Power className="h-4 w-4 mr-1" />
-                                                  Block
-                                                </Button>
-                                                <Button
-                                                  variant="destructive"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setSelectedUser({...user, targetStatus: "DEACTIVATED"})
-                                                    setShowStatusDialog(true)
-                                                  }}
-                                                  title="Deactivate User"
-                                                >
-                                                  <Power className="h-4 w-4 mr-1" />
-                                                  Deactivate
-                                                </Button>
-                                              </>
-                                            )}
-                                            {user.accountStatus === "BLOCKED" && (
-                                              <>
-                                                <Button
-                                                  variant="success"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setSelectedUser({...user, targetStatus: "ACTIVE"})
-                                                    setShowStatusDialog(true)
-                                                  }}
-                                                  title="Activate User"
-                                                  className="bg-green-600 hover:bg-green-700"
-                                                >
-                                                  <Power className="h-4 w-4 mr-1" />
-                                                  Activate
-                                                </Button>
-                                                <Button
-                                                  variant="destructive"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setSelectedUser({...user, targetStatus: "DEACTIVATED"})
-                                                    setShowStatusDialog(true)
-                                                  }}
-                                                  title="Deactivate User"
-                                                >
-                                                  <Power className="h-4 w-4 mr-1" />
-                                                  Deactivate
-                                                </Button>
-                                              </>
-                                            )}
-                                          </>
-                                        )}
-                                        
-                                        {/* Promote button only for dealers */}
-                                        {user.role === "DEALER" && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                              setSelectedUser(user)
-                                              setShowPromoteDialog(true)
-                                            }}
-                                          >
-                                            <Shield className="h-4 w-4 mr-1" />
-                                            Promote to Admin
-                                          </Button>
-                                        )}
-                                        
-                                        {/* Demote button only for admin users */}
-                                        {user.role === "ADMIN" && (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                              setSelectedUser(user)
-                                              setShowDemoteDialog(true)
-                                            }}
-                                          >
-                                            <ShieldAlert className="h-4 w-4 mr-1" />
-                                            Demote to Dealer
-                                          </Button>
-                                        )}
-
-                                        {/* Delete button for active accounts */}
-                                        <Button
-                                          variant="destructive"
-                                          size="sm"
-                                          onClick={() => {
-                                            setSelectedUser(user)
-                                            setShowDeleteDialog(true)
-                                          }}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
+                                    </>
+                                  )}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))
@@ -1094,5 +1089,3 @@ function UsersPage() {
     </div>
   )
 }
-
-export default withAuth(UsersPage, ['ADMIN'])
