@@ -155,7 +155,7 @@ export default function VehicleDetailsPage({ params }) {
 
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Vehicle Type</p>
-                  <p className="text-lg">{vehicle.type}</p>
+                  <p className="text-lg">{vehicle.type?.name || vehicle.type}</p>
                 </div>
               </div>
             </CardContent>

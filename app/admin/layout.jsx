@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, Car, FileSpreadsheet, Users, LogOut, Menu, X, User, Bell } from "lucide-react"
+import { BarChart3, Car, FileSpreadsheet, Users, LogOut, Menu, X, User, Bell, Code } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -15,18 +15,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const navItems = [
   { name: "Dashboard", href: "/admin", icon: BarChart3 },
   { name: "User Management", href: "/admin/users", icon: Users },
   { name: "Vehicle Management", href: "/admin/vehicles", icon: Car },
   { name: "Reports", href: "/admin/reports", icon: FileSpreadsheet },
+  { name: "Code Management", href: "/admin/code-management", icon: Code },
 ]
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [user, setUser] = useState({ username: "Admin", email: "admin@kia.com" })
   
   // Get user data on component mount
@@ -49,6 +52,10 @@ export default function AdminLayout({ children }) {
     await handleLogout(() => {
       router.push("/")
     })
+  }
+
+  const onProfile = async () => {
+    router.push("/admin/profile")
   }
 
   return (
@@ -97,10 +104,18 @@ export default function AdminLayout({ children }) {
       </div>
 
       {/* Static sidebar for desktop */}
-      <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
+      <div className={`hidden md:flex md:flex-col transition-all duration-300 ease-in-out ${
+        sidebarCollapsed ? "md:w-20" : "md:w-64"
+      }`}>
         <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
           <div className="flex flex-shrink-0 items-center px-4">
-            <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+            <img 
+              src="/kialogo-removebg.png?height=40&width=80" 
+              alt="Kia Logo" 
+              className={`transition-all duration-300 ease-in-out ${
+                sidebarCollapsed ? "h-6 w-auto mx-auto" : "h-8 w-auto"
+              }`} 
+            />
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2 pb-4">
@@ -115,20 +130,39 @@ export default function AdminLayout({ children }) {
                     }`}
                   >
                     <item.icon
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      className={`flex-shrink-0 ${
+                        sidebarCollapsed ? "h-5 w-5 mx-auto" : "mr-3 h-5 w-5"
+                      } ${
                         isActive ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
                       }`}
                     />
-                    {item.name}
+                    {!sidebarCollapsed && <span>{item.name}</span>}
                   </Link>
                 )
               })}
             </nav>
+            <div className="px-2 pb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="h-5 w-5" />
+                ) : (
+                  <>
+                    <ChevronLeft className="mr-2 h-5 w-5" />
+                    <span>Collapse Sidebar</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col md:pl-64">
+      <div className="flex flex-1 flex-col md:pl-0">
         <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
           <button
             type="button"
@@ -201,11 +235,10 @@ export default function AdminLayout({ children }) {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={onProfile}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={onLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
@@ -217,7 +250,11 @@ export default function AdminLayout({ children }) {
         </div>
 
         <main className="flex-1">
-          <div className="py-6">{children}</div>
+          <div className="py-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+              {children}
+            </div>
+          </div>
         </main>
       </div>
     </div>

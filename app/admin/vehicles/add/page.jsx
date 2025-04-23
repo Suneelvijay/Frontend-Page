@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -15,16 +15,57 @@ import { toast } from "sonner"
 export default function AddVehiclePage() {
   const router = useRouter()
   const [imagePreview, setImagePreview] = useState(null)
+  const [vehicleTypes, setVehicleTypes] = useState([])
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     fuelType: "",
     color: "",
     price: "",
-    type: "SUV" // Default value
+    type: "" // Remove default value since we'll set it after fetching
   })
   const [imageFile, setImageFile] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const fetchVehicleTypes = async () => {
+      try {
+        const token = localStorage.getItem("authToken")
+        if (!token) {
+          toast.error("You need to be logged in")
+          router.push("/login")
+          return
+        }
+
+        const response = await fetch("http://localhost:8080/api/vehicle-types", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch vehicle types")
+        }
+
+        const data = await response.json()
+        console.log("Fetched vehicle types:", data) // Debug log
+        setVehicleTypes(data)
+        
+        // Set default type to first vehicle type if available
+        if (data.length > 0) {
+          setFormData(prev => ({
+            ...prev,
+            type: data[0].name
+          }))
+        }
+      } catch (error) {
+        toast.error("Failed to load vehicle types")
+        console.error("Error fetching vehicle types:", error)
+      }
+    }
+
+    fetchVehicleTypes()
+  }, [router])
 
   const handleInputChange = (e) => {
     const { id, value } = e.target
@@ -231,15 +272,17 @@ export default function AddVehiclePage() {
                 <Label htmlFor="type">Vehicle Type</Label>
                 <Select 
                   onValueChange={(value) => handleSelectChange("type", value)}
+                  value={formData.type}
                 >
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Select vehicle type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="SUV">SUV</SelectItem>
-                    <SelectItem value="SEDAN">Sedan</SelectItem>
-                    <SelectItem value="HATCHBACK">Hatchback</SelectItem>
-                    <SelectItem value="ELECTRIC">Electric</SelectItem>
+                    {Array.isArray(vehicleTypes) && vehicleTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.name}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
