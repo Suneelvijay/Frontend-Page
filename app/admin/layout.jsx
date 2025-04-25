@@ -17,13 +17,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-const navItems = [
-  { name: "Dashboard", href: "/admin", icon: BarChart3 },
-  { name: "User Management", href: "/admin/users", icon: Users },
-  { name: "Vehicle Management", href: "/admin/vehicles", icon: Car },
-  { name: "Reports", href: "/admin/reports", icon: FileSpreadsheet },
-  { name: "Code Management", href: "/admin/code-management", icon: Code },
-]
+// Remove the hardcoded navItems
+const iconMap = {
+  "BarChart3": BarChart3,
+  "Users": Users,
+  "Car": Car,
+  "FileSpreadsheet": FileSpreadsheet,
+  "Code": Code
+}
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
@@ -31,6 +32,56 @@ export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [user, setUser] = useState({ username: "Admin", email: "admin@kia.com" })
+  const [menuItems, setMenuItems] = useState([])
+  
+  // Modify the useEffect for menu items
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        // First check local storage for menu config
+        const localConfig = localStorage.getItem('adminMenuConfig')
+        if (localConfig) {
+          const parsedConfig = JSON.parse(localConfig)
+          const enabledItems = parsedConfig
+            .filter(item => item.enabled)
+            .sort((a, b) => a.order - b.order)
+            .map(item => ({
+              name: item.title,
+              href: item.path,
+              icon: iconMap[item.icon] || BarChart3
+            }))
+          setMenuItems(enabledItems)
+          return
+        }
+
+        // Fallback to API if no local config
+        const token = localStorage.getItem("authToken")
+        if (!token) return
+
+        const response = await fetch("http://localhost:8080/api/admin/menu-config", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) throw new Error("Failed to fetch menu items")
+
+        const data = await response.json()
+        const enabledItems = data.filter(item => item.enabled)
+          .sort((a, b) => a.order - b.order)
+          .map(item => ({
+            name: item.title,
+            href: item.path,
+            icon: iconMap[item.icon] || BarChart3
+          }))
+        setMenuItems(enabledItems)
+      } catch (error) {
+        console.error("Error fetching menu items:", error)
+      }
+    }
+
+    fetchMenuItems()
+  }, [])
   
   // Get user data on component mount
   useEffect(() => {
@@ -79,7 +130,7 @@ export default function AdminLayout({ children }) {
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-2">
-              {navItems.map((item) => {
+              {menuItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                 return (
                   <Link
@@ -119,7 +170,7 @@ export default function AdminLayout({ children }) {
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="flex-1 space-y-1 px-2 pb-4">
-              {navItems.map((item) => {
+              {menuItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                 return (
                   <Link

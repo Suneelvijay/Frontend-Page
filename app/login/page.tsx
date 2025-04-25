@@ -143,6 +143,20 @@ export default function LoginPage() {
     }
   }
 
+  const maskEmail = (email: string) => {
+    const [username, domain] = email.split('@');
+    
+    // Handle short usernames (less than 4 characters)
+    if (username.length <= 4) {
+      return `${username[0]}${'*'.repeat(Math.max(username.length - 1, 1))}@${domain}`;
+    }
+
+    const firstTwo = username.slice(0, 2);
+    const lastTwo = username.slice(-2);
+    const maskedUsername = `${firstTwo}${'*'.repeat(username.length - 4)}${lastTwo}`;
+    return `${maskedUsername}@${domain}`;
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
@@ -219,7 +233,7 @@ export default function LoginPage() {
 
       <OTPDialog
         isOpen={showOTPDialog}
-        email={userEmail}
+        email={maskEmail(userEmail)}
         onClose={() => setShowOTPDialog(false)}
         onVerify={handleVerifyOTP}
         isLogin={true}
