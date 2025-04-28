@@ -92,12 +92,12 @@ export default function VehiclesPage() {
 
     // Apply type filter
     if (filters.type !== "ALL") {
-      filtered = filtered.filter(vehicle => vehicle.type === filters.type)
+      filtered = filtered.filter(vehicle => vehicle.type.name === filters.type)
     }
 
     // Apply fuel type filter
     if (filters.fuelType !== "ALL") {
-      filtered = filtered.filter(vehicle => vehicle.fuelType === filters.fuelType)
+      filtered = filtered.filter(vehicle => vehicle.fuelType.name === filters.fuelType)
     }
 
     // Apply price range filter
@@ -112,7 +112,7 @@ export default function VehiclesPage() {
       filtered = filtered.filter(vehicle => 
         vehicle.name.toLowerCase().includes(query) ||
         vehicle.description.toLowerCase().includes(query) ||
-        vehicle.fuelType.toLowerCase().includes(query)
+        vehicle.fuelType.name.toLowerCase().includes(query)
       )
     }
 
@@ -296,9 +296,9 @@ export default function VehiclesPage() {
                           <h3 className="text-lg font-semibold">{vehicle.name}</h3>
                           <p className="text-red-600 font-medium">{formatPrice(vehicle.price)}</p>
                           <div className="flex gap-2 mt-2 text-sm text-muted-foreground">
-                            <Badge variant="outline">{vehicle.type}</Badge>
+                            <Badge variant="outline">{vehicle.type.name}</Badge>
                             <span>•</span>
-                            <span>{vehicle.fuelType}</span>
+                            <span>{vehicle.fuelType.name}</span>
                           </div>
                           <p className="mt-2 text-sm line-clamp-2">{vehicle.description}</p>
                         </CardContent>
