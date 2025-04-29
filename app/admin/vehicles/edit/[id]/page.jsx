@@ -57,7 +57,8 @@ export default function EditVehiclePage({ params }) {
           fuelType: data.fuelType || "",
           color: data.color || "",
           price: data.price || "",
-          type: data.type || "SUV"
+          type: data.type || "SUV",
+          version: data.version || 0 // Store the version from the response
         })
         if (data.image) {
           setImagePreview(data.image)
@@ -123,6 +124,7 @@ export default function EditVehiclePage({ params }) {
 
       const formDataToSend = new FormData()
       formDataToSend.append("id", vehicleId)
+      formDataToSend.append("version", formData.version.toString())
       formDataToSend.append("name", formData.name)
       formDataToSend.append("description", formData.description)
       formDataToSend.append("fuelType", formData.fuelType)
@@ -134,8 +136,8 @@ export default function EditVehiclePage({ params }) {
         formDataToSend.append("image", imageFile)
       }
 
-      const response = await fetch(`http://localhost:8080/api/admin/vehicles/${vehicleId}`, {
-        method: "PUT",
+      const response = await fetch("http://localhost:8080/api/vehicles/update-with-image", {
+        method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
         },
@@ -143,8 +145,20 @@ export default function EditVehiclePage({ params }) {
       })
 
       if (!response.ok) {
+        if (response.status === 409) {
+          // Handle version conflict
+          toast.error("Vehicle was updated by someone else. Latest version loaded.")
+          router.push(`/admin/vehicles/${vehicleId}`) // Redirect to view page
+          return
+        }
         throw new Error("Failed to update vehicle")
       }
+
+      const updatedVehicle = await response.json()
+      setFormData(prev => ({
+        ...prev,
+        version: updatedVehicle.version
+      }))
 
       toast.success("Vehicle updated successfully")
       router.push(`/admin/vehicles/${vehicleId}`)

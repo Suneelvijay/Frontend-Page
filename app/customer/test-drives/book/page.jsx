@@ -165,7 +165,7 @@ export default function BookTestDrivePage() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold">{vehicle.name}</h3>
-                  <p className="text-sm text-muted-foreground">{vehicle.type} • {vehicle.fuelType}</p>
+                  <p className="text-sm text-muted-foreground">{vehicle.type?.name || vehicle.type || 'Unknown Type'} • {vehicle.fuelType}</p>
                   <p className="mt-2 text-sm">{vehicle.description}</p>
                 </div>
               </div>

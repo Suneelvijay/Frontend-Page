@@ -192,7 +192,7 @@ export default function VehicleDetailsPage({ params }) {
               <div className="flex justify-between items-start">
                 <div>
                   <Badge className="bg-red-600 mb-2">
-                    {typeof vehicle.type === 'object' ? vehicle.type.name : vehicle.type}
+                    {vehicle.type?.name || vehicle.type || 'Unknown Type'}
                   </Badge>
                   <h2 className="text-2xl font-bold">{formatPrice(vehicle.price)}</h2>
                   <p className="text-sm text-muted-foreground">Ex-showroom price</p>
