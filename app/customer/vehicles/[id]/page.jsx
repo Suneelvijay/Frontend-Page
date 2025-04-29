@@ -191,7 +191,9 @@ export default function VehicleDetailsPage({ params }) {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <Badge className="bg-red-600 mb-2">{vehicle.type}</Badge>
+                  <Badge className="bg-red-600 mb-2">
+                    {typeof vehicle.type === 'object' ? vehicle.type.name : vehicle.type}
+                  </Badge>
                   <h2 className="text-2xl font-bold">{formatPrice(vehicle.price)}</h2>
                   <p className="text-sm text-muted-foreground">Ex-showroom price</p>
                 </div>
