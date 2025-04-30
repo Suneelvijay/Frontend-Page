@@ -92,12 +92,12 @@ export default function VehiclesPage() {
 
     // Apply type filter
     if (filters.type !== "ALL") {
-      filtered = filtered.filter(vehicle => vehicle.type.name === filters.type)
+      filtered = filtered.filter(vehicle => vehicle.type?.name === filters.type)
     }
 
     // Apply fuel type filter
     if (filters.fuelType !== "ALL") {
-      filtered = filtered.filter(vehicle => vehicle.fuelType.name === filters.fuelType)
+      filtered = filtered.filter(vehicle => vehicle.fuelType?.name === filters.fuelType)
     }
 
     // Apply price range filter
@@ -110,9 +110,9 @@ export default function VehiclesPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(vehicle => 
-        vehicle.name.toLowerCase().includes(query) ||
-        vehicle.description.toLowerCase().includes(query) ||
-        vehicle.fuelType.name.toLowerCase().includes(query)
+        (vehicle.name?.toLowerCase() || '').includes(query) ||
+        (vehicle.description?.toLowerCase() || '').includes(query) ||
+        (vehicle.fuelType?.name?.toLowerCase() || '').includes(query)
       )
     }
 

@@ -102,6 +102,8 @@ export default function QuotesPage() {
         return <Badge className="bg-yellow-500">Pending</Badge>
       case "quoted":
         return <Badge className="bg-green-500">Quoted</Badge>
+      case "approved":
+        return <Badge className="bg-green-500">Approved</Badge>
       case "cancelled":
         return <Badge className="bg-red-500">Cancelled</Badge>
       default:
@@ -110,8 +112,7 @@ export default function QuotesPage() {
   }
 
   const downloadPDF = (quote: QuoteRequest) => {
-    // In a real app, this would generate and download a PDF
-    alert(`Downloading quote details for quote ID: ${quote.id}`)
+    router.push(`/customer/quotes/download/${quote.id}`)
   }
 
   // Format price to INR
@@ -223,6 +224,14 @@ export default function QuotesPage() {
                     >
                       View Details
                     </button>
+                    {request.status === 'APPROVED' && (
+                      <button
+                        onClick={() => downloadPDF(request)}
+                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+                      >
+                        Download
+                      </button>
+                    )}
                     {request.status === 'PENDING' && (
                       <button
                         onClick={() => handleCancelClick(request.id)}
@@ -310,7 +319,7 @@ export default function QuotesPage() {
                     Cancel
                   </Button>
                 )}
-                {selectedQuote.status.toLowerCase() === "quoted" && (
+                {selectedQuote.status.toLowerCase() === "approved" && (
                   <Button
                     variant="outline"
                     onClick={() => downloadPDF(selectedQuote)}

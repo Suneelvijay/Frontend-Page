@@ -126,8 +126,7 @@ export default function TestDrivesPage() {
   }
 
   const downloadPDF = (request) => {
-    // In a real app, this would generate and download a PDF
-    alert(`Downloading test drive details for ${request.vehicleName}`)
+    router.push(`/customer/test-drives/download/${request.id}`)
   }
 
   if (loading) {
@@ -253,6 +252,12 @@ export default function TestDrivesPage() {
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
+                                {request.status === "APPROVED" && (
+                                  <DropdownMenuItem onClick={() => downloadPDF(request)}>
+                                    <FileDown className="mr-2 h-4 w-4" />
+                                    Download Details
+                                  </DropdownMenuItem>
+                                )}
                                 {request.status === "PENDING" && (
                                   <DropdownMenuItem
                                     onClick={() => handleCancel(request.id)}
