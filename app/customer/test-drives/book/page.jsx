@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Image from "next/image" // Add this import
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -152,10 +153,13 @@ export default function BookTestDrivePage() {
               <div className="space-y-4">
                 <div className="relative h-48 w-full">
                   {vehicle.image ? (
-                    <img
+                    <Image
                       src={`data:image/jpeg;base64,${vehicle.image}`}
                       alt={vehicle.name}
+                      width={800}
+                      height={400}
                       className="object-cover w-full h-full"
+                      priority
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -239,7 +243,7 @@ export default function BookTestDrivePage() {
                   <h4 className="font-medium">Instructions</h4>
                   <ul className="text-sm text-muted-foreground space-y-2 list-disc pl-4">
                     <li>Please arrive 10 minutes before your scheduled time</li>
-                    <li>Bring your valid driver's license</li>
+                    <li>Bring your valid driver&apos;s license</li>
                     <li>The test drive will last approximately 30 minutes</li>
                     <li>Our representative will guide you through the vehicle features</li>
                     <li>In case of any changes, please contact us at least 24 hours in advance</li>

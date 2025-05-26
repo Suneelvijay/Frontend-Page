@@ -2,15 +2,13 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import Image from "next/image" // Add this import
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Edit, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export default function VehicleDetailsPage({ params }) {
-  const router = useRouter()
-  const vehicleId = params.id
   const [loading, setLoading] = useState(true)
   const [vehicle, setVehicle] = useState(null)
 
@@ -22,7 +20,7 @@ export default function VehicleDetailsPage({ params }) {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch(`http://localhost:8080/api/vehicles/${vehicleId}`, {
+        const response = await fetch(`http://localhost:8080/api/vehicles/${params.id}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`
@@ -44,7 +42,7 @@ export default function VehicleDetailsPage({ params }) {
     }
 
     fetchVehicle()
-  }, [vehicleId])
+  }, [params.id])
 
   // Format price to INR
   const formatPrice = (price) => {
@@ -88,7 +86,7 @@ export default function VehicleDetailsPage({ params }) {
             </Link>
             <h1 className="text-2xl font-bold tracking-tight">{vehicle.name}</h1>
           </div>
-          <Link href={`/admin/vehicles/edit/${vehicleId}`}>
+          <Link href={`/admin/vehicles/edit/${params.id}`}>
             <Button>
               <Edit className="mr-2 h-4 w-4" />
               Edit Vehicle
@@ -105,10 +103,13 @@ export default function VehicleDetailsPage({ params }) {
             <CardContent>
               {vehicle.image ? (
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                  <img
+                  <Image
                     src={`data:image/jpeg;base64,${vehicle.image}`}
                     alt={vehicle.name}
-                    className="object-cover w-full h-full"
+                    width={800}
+                    height={450}
+                    className="object-cover"
+                    priority
                   />
                 </div>
               ) : (
@@ -164,4 +165,4 @@ export default function VehicleDetailsPage({ params }) {
       </div>
     </div>
   )
-} 
+}

@@ -22,8 +22,6 @@ export default function ForgotPasswordPage() {
   const [errors, setErrors] = useState({})
 
   // Password validation
-  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-  
   const validatePassword = (password) => {
     if (!password) return "Password is required"
     if (password.length < 8) return "Password must be at least 8 characters"

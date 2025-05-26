@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image" // Add this import
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -296,10 +297,13 @@ export default function AddVehiclePage() {
                       className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"
                     >
                       {imagePreview ? (
-                        <img
+                        <Image
                           src={imagePreview || "/placeholder.svg"}
                           alt="Vehicle Preview"
                           className="h-full object-contain"
+                          width={500}
+                          height={300}
+                          style={{ width: '100%', height: '100%' }}
                         />
                       ) : (
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">

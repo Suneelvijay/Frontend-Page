@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,17 +40,13 @@ export default function QuoteRequests() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [pageSize, setPageSize] = useState(5);
 
-  useEffect(() => {
-    fetchQuoteRequests();
-  }, [currentPage, pageSize, statusFilter]);
-
-  const fetchQuoteRequests = async () => {
+  const fetchQuoteRequests = useCallback(async () => {
     try {
       const response = await dealerApi.getQuoteRequests(currentPage, pageSize, statusFilter);
       setQuoteRequests(response.content);
       setTotalPages(response.totalPages);
       setLoading(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to fetch quote requests",
@@ -58,7 +54,11 @@ export default function QuoteRequests() {
       });
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, statusFilter, toast]);
+
+  useEffect(() => {
+    fetchQuoteRequests();
+  }, [fetchQuoteRequests]);
 
   const handleStatusUpdate = async (requestId, status, quotedPrice, adminResponse) => {
     try {
@@ -68,7 +68,7 @@ export default function QuoteRequests() {
         description: `Quote request ${status.toLowerCase()} successfully`,
       });
       fetchQuoteRequests();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update quote request",
@@ -92,7 +92,7 @@ export default function QuoteRequests() {
         title: "Success",
         description: "Quote requests downloaded successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to download quote requests",
@@ -275,4 +275,4 @@ export default function QuoteRequests() {
       </Card>
     </div>
   );
-} 
+}

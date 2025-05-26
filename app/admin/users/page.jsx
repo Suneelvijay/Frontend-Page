@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Loader2, Trash2, UserPlus, Shield, ShieldAlert, Search, Check, X, History, Power } from "lucide-react"
+import { ArrowLeft, Loader2, Trash2, UserPlus, Shield, ShieldAlert, Search, Check, X, Power } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -424,14 +424,6 @@ export default function UsersPage() {
       default:
         return "secondary"
     }
-  }
-
-  const getStatusButtonVariant = (status) => {
-    return status === "ACTIVE" ? "destructive" : "success"
-  }
-
-  const getStatusButtonText = (status) => {
-    return status === "ACTIVE" ? "Deactivate" : "Activate"
   }
 
   const handleApproveRequest = async (requestId) => {

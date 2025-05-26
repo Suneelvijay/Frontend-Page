@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, FileText, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react"
+import { Calendar, FileText, ChevronLeft } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "react-hot-toast"
 import { customerAPI } from "@/lib/api"
@@ -19,7 +19,7 @@ export default function VehicleDetailsPage({ params }) {
   const vehicleId = params.id
   const [vehicle, setVehicle] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  // Remove unused state since we're not implementing image gallery yet
   const [notes, setNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -90,17 +90,7 @@ export default function VehicleDetailsPage({ params }) {
     }).format(price)
   }
 
-  const nextImage = () => {
-    if (vehicle?.images) {
-      setCurrentImageIndex((prevIndex) => (prevIndex === vehicle.images.length - 1 ? 0 : prevIndex + 1))
-    }
-  }
 
-  const prevImage = () => {
-    if (vehicle?.images) {
-      setCurrentImageIndex((prevIndex) => (prevIndex === 0 ? vehicle.images.length - 1 : prevIndex - 1))
-    }
-  }
 
   if (loading) {
     return (
@@ -154,32 +144,19 @@ export default function VehicleDetailsPage({ params }) {
             <CardContent className="p-0">
               <div className="relative aspect-video w-full">
                 {vehicle.image ? (
-                  <img
+                  <Image
                     src={`data:image/jpeg;base64,${vehicle.image}`}
                     alt={vehicle.name}
+                    width={800}
+                    height={450}
                     className="object-cover w-full h-full"
+                    priority
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                     <span className="text-gray-400">No image available</span>
                   </div>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2"
-                  onClick={prevImage}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={nextImage}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
               </div>
             </CardContent>
           </Card>

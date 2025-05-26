@@ -18,12 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 
 export default function VehiclesPage() {
   const router = useRouter()
@@ -281,10 +275,13 @@ export default function VehiclesPage() {
                       <Card key={vehicle.id} className="overflow-hidden">
                         <div className="relative h-48 w-full">
                           {vehicle.image ? (
-                            <img
+                            <Image
                               src={`data:image/jpeg;base64,${vehicle.image}`}
                               alt={vehicle.name}
+                              width={800}
+                              height={400}
                               className="object-cover w-full h-full"
+                              priority
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-200 flex items-center justify-center">

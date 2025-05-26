@@ -9,7 +9,7 @@ interface User {
   email: string;
   fullName: string;
   role: string;
-  [key: string]: any; // For any additional user properties
+  [key: string]: string | number | boolean | null | undefined; // For additional user properties with specific types
 }
 
 interface AuthContextType {
@@ -18,9 +18,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   pendingVerification: boolean;
   pendingEmail: string;
-  register: (userData: { username: string; password: string; email: string; fullName: string }) => Promise<any>;
-  verifyEmail: (email: string, otp: string) => Promise<any>;
-  login: (credentials: { username: string; password: string }) => Promise<any>;
+  register: (userData: { username: string; password: string; email: string; fullName: string }) => Promise<User>;
+  verifyEmail: (email: string, otp: string) => Promise<User>;
+  login: (credentials: { username: string; password: string }) => Promise<User>;
   verifyLogin: (email: string, otp: number) => Promise<User>;
   logout: () => Promise<void>;
   error: string | null;
@@ -78,9 +78,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setPendingEmail(userData.email);
       
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
-      throw err;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      setError(errorMessage);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -99,9 +100,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setPendingEmail('');
       
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Email verification failed');
-      throw err;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Email verification failed';
+      setError(errorMessage);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -120,9 +122,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setPendingEmail(response.email || '');
       
       return response;
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-      throw err;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setError(errorMessage);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -146,9 +149,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       setUser(response.user);
       return response.user;
-    } catch (err: any) {
-      setError(err.message || 'Login verification failed');
-      throw err;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Login verification failed';
+      setError(errorMessage);
+      throw error;
     } finally {
       setIsLoading(false);
     }

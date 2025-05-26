@@ -313,11 +313,13 @@ export default function EditVehiclePage({ params }) {
                   </div>
                   {imagePreview && (
                     <div className="relative aspect-video w-full max-w-md overflow-hidden rounded-lg">
-                      <img
+                      <Image
                         src={typeof imagePreview === 'string' && imagePreview.startsWith('data:') 
                           ? imagePreview 
                           : `data:image/jpeg;base64,${imagePreview}`}
                         alt="Vehicle preview"
+                        width={800}
+                        height={450}
                         className="object-cover w-full h-full"
                       />
                     </div>

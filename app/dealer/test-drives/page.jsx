@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,56 +43,24 @@ import {
 export default function TestDrives() {
   const { toast } = useToast();
   const router = useRouter();
-  const [testDrives, setTestDrives] = useState([]);
-  const [filteredTestDrives, setFilteredTestDrives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [pageSize, setPageSize] = useState(10);
-  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [downloadFormat, setDownloadFormat] = useState('normal');
+  const [testDrives, setTestDrives] = useState([]);
+  const [sortOrder, setSortOrder] = useState('asc');
 
-  useEffect(() => {
-    fetchTestDrives();
-  }, [currentPage, pageSize, statusFilter]);
-
-  useEffect(() => {
-    // Filter and sort test drives
-    let filtered = [...testDrives];
-    
-    // Apply search filter
-    if (searchQuery.trim() !== '') {
-      const searchLower = searchQuery.toLowerCase();
-      filtered = filtered.filter(request => 
-        request.userName?.toLowerCase().includes(searchLower) ||
-        request.userEmail?.toLowerCase().includes(searchLower) ||
-        request.vehicleName?.toLowerCase().includes(searchLower) ||
-        request.notes?.toLowerCase().includes(searchLower) ||
-        formatDate(request.requestedDate).toLowerCase().includes(searchLower) ||
-        request.status?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const dateA = new Date(a.requestedDate);
-      const dateB = new Date(b.requestedDate);
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-
-    setFilteredTestDrives(filtered);
-  }, [searchQuery, testDrives, sortOrder]);
-
-  const fetchTestDrives = async () => {
+  const fetchTestDrives = useCallback(async () => {
     try {
       setLoading(true);
       const response = await dealerApi.getTestDriveRequests(currentPage, pageSize, statusFilter);
       setTestDrives(response.content);
       setTotalPages(response.totalPages);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to fetch test drive requests",
@@ -101,7 +69,11 @@ export default function TestDrives() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, statusFilter, toast]);
+
+  useEffect(() => {
+    fetchTestDrives();
+  }, [fetchTestDrives]);
 
   const handleStatusUpdate = async (requestId, status) => {
     try {
@@ -111,7 +83,7 @@ export default function TestDrives() {
         description: "Test drive status updated successfully",
       });
       fetchTestDrives();
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update test drive status",
@@ -132,7 +104,7 @@ export default function TestDrives() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       setShowDownloadDialog(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to download test drives",
@@ -177,6 +149,28 @@ export default function TestDrives() {
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
+
+  // Add filtered and sorted test drives logic
+  const filteredTestDrives = testDrives
+    .filter(drive => {
+      if (searchQuery === '') return true;
+      
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        drive.userName?.toLowerCase().includes(searchLower) ||
+        drive.userEmail?.toLowerCase().includes(searchLower) ||
+        drive.vehicleName?.toLowerCase().includes(searchLower) ||
+        drive.notes?.toLowerCase().includes(searchLower) ||
+        drive.status?.toLowerCase().includes(searchLower) ||
+        (drive.requestedDate && formatDate(drive.requestedDate).toLowerCase().includes(searchLower))
+      );
+    })
+    .sort((a, b) => {
+      if (!a.requestedDate || !b.requestedDate) return 0;
+      const dateA = new Date(a.requestedDate);
+      const dateB = new Date(b.requestedDate);
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
 
   if (loading) {
     return (

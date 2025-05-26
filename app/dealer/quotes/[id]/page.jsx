@@ -36,8 +36,6 @@ export default function QuoteDetailsPage({ params }) {
   const { id } = params
   const quote = quoteRequests.find((q) => q.id === id)
 
-  const [status, setStatus] = useState(quote?.status || "pending")
-  const [notes, setNotes] = useState(quote?.notes || "")
   const [basePrice, setBasePrice] = useState("5995000")
   const [accessories, setAccessories] = useState("150000")
   const [insurance, setInsurance] = useState("85000")

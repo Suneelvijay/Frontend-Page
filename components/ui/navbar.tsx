@@ -5,10 +5,16 @@ import { Button } from "@/components/ui/button"
 import { isAuthenticated, getCurrentUser } from "@/lib/auth-utils"
 import { LogoutButton } from "@/components/ui/logout-button"
 
+// Define the User type
+interface User {
+  username: string;
+  role: "USER" | "DEALER" | "ADMIN";
+}
+
 export function Navbar() {
   const pathname = usePathname()
   const [authenticated, setAuthenticated] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
 
   // Check authentication status on client side
   useEffect(() => {

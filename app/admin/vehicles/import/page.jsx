@@ -2,20 +2,15 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image" // Add this import
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Upload, FileType, AlertCircle, CheckCircle2, X, Info } from "lucide-react"
+import { ArrowLeft, Upload, FileType, AlertCircle, CheckCircle2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { InfoIcon } from "lucide-react"
+
 
 export default function ImportVehiclesPage() {
   const router = useRouter()
@@ -286,7 +281,7 @@ export default function ImportVehiclesPage() {
                 <li>• Type should be one of: SUV, SEDAN, HATCHBACK, ELECTRIC.</li>
                 <li>• Price should be a numeric value without currency symbols.</li>
                 <li>• <strong>Image column</strong>: If left empty, the default placeholder will be used automatically.</li>
-                <li>• You can also specify "/placeholder.svg" to use the default image.</li>
+                <li>• You can also specify &quot;/placeholder.svg`&quot;` to use the default image.</li>
                 <li>• The first row should contain the column headers.</li>
               </ul>
               <div className="flex items-center mt-4 space-x-2">
@@ -300,7 +295,13 @@ export default function ImportVehiclesPage() {
                 </Button>
                 <div className="flex items-center">
                   <span className="text-xs text-muted-foreground ml-2">Default placeholder image:</span>
-                  <img src="/placeholder.svg" alt="Placeholder" className="h-6 w-10 ml-2" />
+                  <Image
+                    src="/placeholder.svg"
+                    alt="Placeholder"
+                    width={40}
+                    height={24}
+                    className="ml-2"
+                  />
                 </div>
               </div>
             </div>

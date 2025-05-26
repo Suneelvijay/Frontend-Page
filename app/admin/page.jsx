@@ -53,12 +53,12 @@ export default function AdminDashboard() {
       <div className="flex flex-col space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome to the Kia Dealer Management System dashboard. Here's an overview of your business.
+          Welcome to the Kia Dealer Management System dashboard. Here&apos;s an overview of your business.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-left justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -73,7 +73,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-left justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Vehicles Sold</CardTitle>
               <Car className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -88,7 +88,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-left justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">New Customers</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -103,7 +103,7 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-row items-left justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Test Drives</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>

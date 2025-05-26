@@ -11,7 +11,8 @@ export const isTokenExpired = (token: string): boolean => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
     return payload.exp * 1000 < Date.now()
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error('Token parsing error:', error)
     return true
   }
 }
@@ -97,7 +98,10 @@ export const getUserRole = (): string | null => {
  * @param toast Toast notification function
  * @returns boolean indicating if user is authenticated
  */
-export const checkAuthStatus = (router: any, toast: any): boolean => {
+export const checkAuthStatus = (
+  router: { push: (path: string) => void },
+  toast: { error: (message: string) => void }
+): boolean => {
   const token = localStorage.getItem("authToken")
   
   if (!token) {

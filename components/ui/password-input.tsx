@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string
   error?: string
-  showPassword?: boolean
   onTogglePassword?: () => void
 }
 
@@ -18,7 +17,6 @@ export function PasswordInput({
   className,
   label,
   error,
-  showPassword,
   onTogglePassword,
   ...props
 }: PasswordInputProps) {
@@ -59,4 +57,4 @@ export function PasswordInput({
       {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   )
-} 
+}

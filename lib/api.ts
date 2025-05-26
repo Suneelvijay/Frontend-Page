@@ -34,7 +34,7 @@ interface UserData {
   email: string;
   fullName: string;
   role: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | undefined; // More specific types for additional properties
 }
 
 interface AuthResponse {
@@ -92,7 +92,17 @@ import { toast } from 'sonner'
 /**
  * Wrapper for fetch with error handling
  */
-const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {}, router?: any): Promise<T> => {
+// Add new interfaces for better type safety
+interface RouterInterface {
+  push: (path: string) => void;
+}
+
+interface UserData {
+  [key: string]: unknown;
+}
+
+// Update the fetchWithErrorHandling function signature
+const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {}, router?: RouterInterface): Promise<T> => {
   try {
     // Get auth token from localStorage if available
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
@@ -155,24 +165,24 @@ const fetchWithErrorHandling = async <T>(url: string, options: RequestInit = {},
  */
 export const authAPI = {
   // Register a new user
-  register: async (userData: RegisterData): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/register`, {
+  register: async (userData: RegisterData): Promise<UserData> => {
+    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/api/auth/register`, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   },
   
   // Verify email OTP during registration
-  verifyEmail: async (verifyData: VerifyEmailRequest): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/verify-email`, {
+  verifyEmail: async (verifyData: VerifyEmailRequest): Promise<UserData> => {
+    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/api/auth/verify-email`, {
       method: 'POST',
       body: JSON.stringify(verifyData),
     });
   },
   
   // Login user
-  login: async (credentials: LoginCredentials): Promise<any> => {
-    return fetchWithErrorHandling<any>(`${API_BASE_URL}/api/auth/login`, {
+  login: async (credentials: LoginCredentials): Promise<UserData> => {
+    return fetchWithErrorHandling<UserData>(`${API_BASE_URL}/api/auth/login`, {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
@@ -260,8 +270,8 @@ export const vehiclesAPI = {
  * Dealer API calls
  */
 export const dealerAPI = {
-  getDashboardStats: async (): Promise<Record<string, any>> => {
-    return fetchWithErrorHandling<Record<string, any>>(`${API_BASE_URL}/api/dealers/dashboard`);
+  getDashboardStats: async (): Promise<Record<string, unknown>> => {
+    return fetchWithErrorHandling<Record<string, unknown>>(`${API_BASE_URL}/api/dealers/dashboard`);
   },
   
   getInventory: async (): Promise<InventoryItem[]> => {

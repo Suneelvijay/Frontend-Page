@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { BarChart3, Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, Shield, Home, CarFront } from "lucide-react"
+import { Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, Shield, Home, CarFront } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { handleLogout } from "@/lib/auth-utils"
@@ -18,25 +19,14 @@ import {
 import { useToast } from "@/components/ui/use-toast"
 import dealerApi from '@/app/api/dealer'
 
-const navItems = [
-  { name: "Dashboard", href: "/dealer", icon: BarChart3 },
-  { name: "Test Drive Requests", href: "/dealer/test-drives", icon: Car },
-  { name: "Quote Requests", href: "/dealer/quotes", icon: FileText },
-  { name: "Schedule", href: "/dealer/schedule", icon: Calendar },
-  {
-    name: "Admin Requests",
-    href: "/dealer/admin-requests",
-    icon: Shield
-  },
-]
+// Remove unused navItems array
 
 export default function DealerLayout({ children }) {
-  const pathname = usePathname()
+  const pathname = usePathname() // Add this since it's used in navigation
   const router = useRouter()
   const { toast } = useToast()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState({ username: "Dealer Name", email: "dealer@kia.com" })
-  const [dealerInfo, setDealerInfo] = useState(null)
   const [loading, setLoading] = useState(true)
   
   // Get user data on component mount
@@ -59,7 +49,7 @@ export default function DealerLayout({ children }) {
     checkAuth()
   }, [])
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem('authToken')
       const userData = localStorage.getItem('userData')
@@ -81,7 +71,7 @@ export default function DealerLayout({ children }) {
       }
 
       await fetchDealerProfile()
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Please login to continue",
@@ -89,7 +79,11 @@ export default function DealerLayout({ children }) {
       })
       router.push('/login')
     }
-  }
+  }, [router, toast])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   const fetchDealerProfile = async () => {
     try {
@@ -112,10 +106,10 @@ export default function DealerLayout({ children }) {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken')
-    localStorage.removeItem('userData')
-    router.push('/login')
+  const onLogout = async () => {
+    await handleLogout(() => {
+      router.push("/")
+    })
   }
 
   const navigation = [
@@ -160,7 +154,13 @@ export default function DealerLayout({ children }) {
             </button>
           </div>
           <div className="flex flex-shrink-0 items-center px-4">
-            <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+            <Image
+              src="/kialogo-removebg.png"
+              alt="Kia Logo"
+              width={80}
+              height={40}
+              className="h-8 w-auto"
+            />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-2">
@@ -192,7 +192,13 @@ export default function DealerLayout({ children }) {
       <div className="hidden md:fixed md:inset-y-0 md:flex md:w-64 md:flex-col">
         <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
           <div className="flex flex-shrink-0 items-center px-4">
-            <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+            <Image
+              src="/kialogo-removebg.png"
+              alt="Kia Logo"
+              width={80}
+              height={40}
+              className="h-8 w-auto"
+            />
           </div>
           <div className="mt-5 flex flex-grow flex-col">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
@@ -324,7 +330,7 @@ export default function DealerLayout({ children }) {
                     <span>Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={onLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>

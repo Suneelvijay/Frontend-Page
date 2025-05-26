@@ -1,14 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { Car, FileDown, AlertTriangle, Calendar, IndianRupee } from "lucide-react"
+import { Car, FileDown, AlertTriangle, Calendar } from "lucide-react"
 import { toast } from "sonner"
 import { customerAPI } from '@/lib/api'
 
@@ -29,7 +26,7 @@ export default function QuotesPage() {
   const [quoteRequests, setQuoteRequests] = useState<QuoteRequest[]>([])
   const [selectedQuote, setSelectedQuote] = useState<QuoteRequest | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentPage, setCurrentPage] = useState(0)
+  const [currentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
@@ -115,15 +112,7 @@ export default function QuotesPage() {
     router.push(`/customer/quotes/download/${quote.id}`)
   }
 
-  // Format price to INR
-  const formatPrice = (price: number) => {
-    if (!price) return "Not quoted yet"
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(price)
-  }
+  
 
   const filteredRequests = quoteRequests.filter(request => {
     const matchesStatus = selectedStatus === 'ALL' || request.status === selectedStatus;
@@ -372,63 +361,5 @@ export default function QuotesPage() {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
-
-type QuoteCardProps = {
-  quote: QuoteRequest;
-  onCancel: (id: number) => void;
-  onDownload: (quote: QuoteRequest) => void;
-  onView: (id: number) => void;
-  getStatusBadge: (status: string) => JSX.Element;
-  formatPrice: (price: number) => string;
-}
-
-function QuoteCard({ quote, onCancel, onDownload, onView, getStatusBadge, formatPrice }: QuoteCardProps) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">Quote ID: {quote.id}</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Created: {new Date(quote.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-          {getStatusBadge(quote.status)}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Car className="h-4 w-4 text-muted-foreground" />
-            <span>Vehicle ID: {quote.vehicleId}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>Last Updated: {new Date(quote.updatedAt).toLocaleDateString()}</span>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" size="sm" className="flex-1" onClick={() => onView(quote.id)}>
-              View Details
-            </Button>
-            {quote.status.toLowerCase() === "pending" ? (
-              <Button variant="destructive" size="sm" className="flex-1" onClick={() => onCancel(quote.id)}>
-                Cancel
-              </Button>
-            ) : quote.status.toLowerCase() === "quoted" ? (
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => onDownload(quote)}>
-                Download
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" className="flex-1" disabled>
-                Cancelled
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

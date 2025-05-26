@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -28,7 +28,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Form validation schema
 const formSchema = z.object({
@@ -75,8 +75,7 @@ export default function DemoRequestForm() {
     setIsSubmitting(true);
 
     try {
-      // Submit form data to API
-      const response = await vehiclesAPI.requestDemoRide({
+      await vehiclesAPI.requestDemoRide({
         vehicleId,
         customerId: user?.id,
         name: data.name,
@@ -88,7 +87,6 @@ export default function DemoRequestForm() {
 
       toast.success("Demo ride request submitted successfully");
       
-      // Redirect to confirmation page
       router.push("/demo-ride/confirmation");
     } catch (error) {
       console.error("Failed to submit demo ride request:", error);

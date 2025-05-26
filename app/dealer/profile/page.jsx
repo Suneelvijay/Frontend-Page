@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,13 @@ export default function DealerProfile() {
   const [newPassword, setNewPassword] = useState('');
   const [showPasswordChange, setShowPasswordChange] = useState(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const data = await dealerApi.getProfile();
       setProfile(data);
       setEditedProfile(data);
       setLoading(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to fetch profile data",
@@ -35,7 +31,11 @@ export default function DealerProfile() {
       });
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleUpdateProfile = async () => {
     try {
@@ -49,7 +49,7 @@ export default function DealerProfile() {
         title: "Success",
         description: "Profile updated successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update profile",
@@ -67,7 +67,7 @@ export default function DealerProfile() {
         title: "Success",
         description: "Password changed successfully",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to change password",
@@ -201,4 +201,4 @@ export default function DealerProfile() {
       </div>
     </div>
   );
-} 
+}

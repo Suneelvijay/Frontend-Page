@@ -1,19 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { customerAPI } from '@/lib/api';
 import { toast } from 'react-hot-toast';
 
-interface QuoteRequest {
-  id: number;
-  vehicleId: number;
-  vehicleName: string;
-  status: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export default function QuoteRequestPage() {
   const params = useParams();
@@ -27,7 +18,7 @@ export default function QuoteRequestPage() {
     fetchQuoteRequest();
   }, [params.id]);
 
-  const fetchQuoteRequest = async () => {
+  const fetchQuoteRequest = useCallback(async () => {
     try {
       setLoading(true);
       const response = await customerAPI.getQuoteRequestById(Number(params.id));
@@ -39,7 +30,7 @@ export default function QuoteRequestPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, setQuoteRequest]);
 
   const handleUpdateNotes = async () => {
     if (!quoteRequest) return;
@@ -190,4 +181,4 @@ export default function QuoteRequestPage() {
       </div>
     </div>
   );
-} 
+}

@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd"
 import { GripVertical } from "lucide-react"
 
 interface MenuItem {
@@ -68,7 +67,7 @@ export default function MenuManagementPage() {
     }
   ])
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return
 
     const items = Array.from(menuItems)

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
+import Image from "next/image" // Add this import
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -14,12 +15,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowUpDown, ChevronDown, ChevronUp, Plus, Search, MoreHorizontal, Edit, Trash, FileUp, Loader2, Upload } from "lucide-react"
+import { Search, MoreHorizontal, Edit, Trash, Loader2, Upload } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -40,7 +40,7 @@ export default function VehiclesPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [pageSize, setPageSize] = useState(5)
   
-  const fetchVehicles = async (page = 0) => {
+  const fetchVehicles = useCallback(async (page = 0) => {
     setIsLoading(true)
     setError(null)
     
@@ -79,11 +79,11 @@ export default function VehiclesPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pageSize])
   
   useEffect(() => {
     fetchVehicles(0)
-  }, [pageSize])
+  }, [fetchVehicles])
   
   const handlePageChange = (page) => {
     fetchVehicles(page)
@@ -223,20 +223,24 @@ export default function VehiclesPage() {
                         <TableRow key={vehicle.id}>
                           <TableCell>
                             {vehicle.image ? (
-                              <img
+                              <Image
                                 src={`data:image/jpeg;base64,${vehicle.image}`}
                                 alt={vehicle.name}
-                                className="h-10 w-16 rounded object-cover"
+                                width={64}
+                                height={40}
+                                className="rounded object-cover"
                                 onError={(e) => {
-                                  e.target.onerror = null; // Prevent infinite loop
-                                  e.target.src = "/placeholder.svg"; // Use SVG placeholder
+                                  e.target.onerror = null;
+                                  e.target.src = "/placeholder.svg";
                                 }}
                               />
                             ) : (
-                              <img
+                              <Image
                                 src="/placeholder.svg"
                                 alt={vehicle.name}
-                                className="h-10 w-16 rounded object-cover"
+                                width={64}
+                                height={40}
+                                className="rounded object-cover"
                               />
                             )}
                           </TableCell>
@@ -281,7 +285,7 @@ export default function VehiclesPage() {
                                     <AlertDialogHeader>
                                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                       <AlertDialogDescription>
-                                        This will permanently delete the vehicle "{vehicle.name}" from the system.
+                                        This will permanently delete the vehicle &quot;{vehicle.name}&quot; from the system.
                                         This action cannot be undone.
                                       </AlertDialogDescription>
                                     </AlertDialogHeader>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronLeft, ChevronRight, Loader2, XCircle, Search, Calendar, Clock, MapPin, FileDown, AlertTriangle, MoreHorizontal, Eye } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, XCircle, Search, Calendar, Clock, FileDown, AlertTriangle, MoreHorizontal, Eye } from "lucide-react"
 import { toast } from "sonner"
 import { format } from "date-fns"
 
@@ -28,7 +28,7 @@ export default function TestDrivesPage() {
     totalElements: 0
   })
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     try {
       setLoading(true)
       const token = localStorage.getItem("authToken")
@@ -65,11 +65,11 @@ export default function TestDrivesPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [pagination.page, pagination.size])
 
   useEffect(() => {
     fetchRequests()
-  }, [pagination.page, pagination.size])
+  }, [fetchRequests])
 
   // Filter and search requests on the frontend
   const filteredRequests = useMemo(() => {
@@ -345,7 +345,7 @@ export default function TestDrivesPage() {
 
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground">
-                  Requested on: {format(new Date(selectedRequest.createdAt), "PPP")}
+                  Requested on: {selectedRequest.createdAt ? format(new Date(selectedRequest.createdAt), "PPP") : "N/A"}
                 </p>
               </div>
             </div>

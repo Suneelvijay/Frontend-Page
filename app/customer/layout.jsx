@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import Image from "next/image" // Add this import
 import { usePathname, useRouter } from "next/navigation"
 import { Car, FileText, Calendar, LogOut, Menu, X, User, Bell, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -71,7 +72,14 @@ export default function CustomerLayout({ children }) {
             </button>
           </div>
           <div className="flex flex-shrink-0 items-center px-4">
-            <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+            <Image
+              src="/kialogo-removebg.png"
+              alt="Kia Logo"
+              width={80}
+              height={40}
+              className="h-8 w-auto"
+              priority
+            />
           </div>
           <div className="mt-5 h-0 flex-1 overflow-y-auto">
             <nav className="space-y-1 px-2">
@@ -105,12 +113,15 @@ export default function CustomerLayout({ children }) {
       }`}>
         <div className="flex flex-grow flex-col overflow-y-auto border-r border-gray-200 bg-white pt-5">
           <div className="flex flex-shrink-0 items-center px-4">
-            <img 
-              src="/kialogo-removebg.png?height=40&width=80" 
-              alt="Kia Logo" 
+            <Image
+              src="/kialogo-removebg.png"
+              alt="Kia Logo"
+              width={80}
+              height={40}
               className={`transition-all duration-300 ease-in-out ${
                 sidebarCollapsed ? "h-6 w-auto mx-auto" : "h-8 w-auto"
-              }`} 
+              }`}
+              priority
             />
           </div>
           <div className="mt-5 flex flex-grow flex-col">
@@ -172,7 +183,14 @@ export default function CustomerLayout({ children }) {
             <div className="flex flex-1 items-center">
               {sidebarCollapsed && (
                 <div className="flex-1 flex justify-center">
-                  <img src="/kialogo-removebg.png?height=40&width=80" alt="Kia Logo" className="h-8 w-auto" />
+                  <Image
+                    src="/kialogo-removebg.png"
+                    alt="Kia Logo"
+                    width={80}
+                    height={40}
+                    className="h-8 w-auto"
+                    priority
+                  />
                 </div>
               )}
               {!sidebarCollapsed && (

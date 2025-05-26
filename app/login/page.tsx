@@ -12,6 +12,24 @@ import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
 import { ActiveSessionDialog } from "@/components/ui/active-session-dialog"
 
+interface LoginResponse {
+  error?: string;
+  message?: string;
+  email?: string;
+  hasActiveSession?: boolean;
+  remainingBlockTime?: number;
+}
+
+interface VerifyResponse {
+  id: string;
+  email: string;
+  username: string;
+  role: string;
+  lastLogin: string;
+  token: string;
+  message?: string;
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
@@ -44,7 +62,7 @@ export default function LoginPage() {
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json() as LoginResponse
 
       if (!response.ok) {
         // Handle account expiration error
@@ -70,9 +88,10 @@ export default function LoginPage() {
       // Show OTP dialog
       setShowOTPDialog(true)
       toast.success("OTP has been sent to your email")
-    } catch (err: any) {
-      setError(err.message || "Login failed")
-      toast.error(err.message || "Login failed. Please check your credentials.")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Login failed"
+      setError(errorMessage)
+      toast.error(errorMessage || "Login failed. Please check your credentials.")
     } finally {
       setIsLoading(false)
     }
@@ -105,7 +124,7 @@ export default function LoginPage() {
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json() as VerifyResponse
 
       if (!response.ok) {
         throw new Error(data.message || "Verification failed")
@@ -135,8 +154,9 @@ export default function LoginPage() {
         // Default for USER role
         router.push("/customer/vehicles")
       }
-    } catch (err: any) {
-      toast.error(err.message || "Verification failed")
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Verification failed"
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
       setShowOTPDialog(false)
@@ -223,7 +243,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-center text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/register" className="text-primary hover:underline">
               Register
             </Link>
