@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null)
   
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch("http://192.168.125.84:8080/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Email mismatch. Please try logging in again.")
       }
   
-      const response = await fetch("http://localhost:8080/api/auth/verify-login", {
+      const response = await fetch("http://192.168.125.84:8080/api/auth/verify-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       if (token) {
-        await fetch("http://localhost:8080/api/auth/logout", {
+        await fetch("http://192.168.125.84:8080/api/auth/logout", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token}`,

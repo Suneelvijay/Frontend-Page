@@ -38,7 +38,7 @@ export default function AddVehiclePage() {
           return
         }
 
-        const response = await fetch("http://localhost:8080/api/vehicle-types", {
+        const response = await fetch("http://192.168.125.84:8080/api/vehicle-types", {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -130,7 +130,7 @@ export default function AddVehiclePage() {
       formPayload.append("price", formData.price)
       formPayload.append("type", formData.type)
       
-      const response = await fetch("http://localhost:8080/api/vehicles/create", {
+      const response = await fetch("http://192.168.125.84:8080/api/vehicles/create", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`

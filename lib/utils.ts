@@ -13,7 +13,7 @@ export const handleLogout = async (callback?: () => void) => {
     
     if (token) {
       // Call the logout API
-      await fetch("http://localhost:8080/api/auth/logout", {
+      await fetch("http://192.168.125.84:8080/api/auth/logout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

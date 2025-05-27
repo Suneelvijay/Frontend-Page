@@ -80,7 +80,7 @@ export default function UsersPage() {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch("http://localhost:8080/api/admin/users", {
+        const response = await fetch("http://192.168.125.84:8080/api/admin/users", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`
@@ -148,7 +148,7 @@ export default function UsersPage() {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch("http://localhost:8080/api/user/admin-requests", {
+        const response = await fetch("http://192.168.125.84:8080/api/user/admin-requests", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -188,7 +188,7 @@ export default function UsersPage() {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+        const response = await fetch("http://192.168.125.84:8080/api/user/admin-requests/history", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -235,7 +235,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://localhost:8080/api/user/delete", {
+      const response = await fetch("http://192.168.125.84:8080/api/user/delete", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -266,7 +266,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://localhost:8080/api/user/dealer", {
+      const response = await fetch("http://192.168.125.84:8080/api/user/dealer", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -291,7 +291,7 @@ export default function UsersPage() {
         phoneNumber: ""
       })
       // Refresh users list
-      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+      const fetchResponse = await fetch("http://192.168.125.84:8080/api/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -311,7 +311,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://localhost:8080/api/user/promote-to-admin/${userId}`, {
+      const response = await fetch(`http://192.168.125.84:8080/api/user/promote-to-admin/${userId}`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -325,7 +325,7 @@ export default function UsersPage() {
       toast.success("User promoted to admin successfully")
       setShowPromoteDialog(false)
       // Refresh users list
-      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+      const fetchResponse = await fetch("http://192.168.125.84:8080/api/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -345,7 +345,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://localhost:8080/api/user/demote-to-dealer/${userId}`, {
+      const response = await fetch(`http://192.168.125.84:8080/api/user/demote-to-dealer/${userId}`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -359,7 +359,7 @@ export default function UsersPage() {
       toast.success("User demoted to dealer successfully")
       setShowDemoteDialog(false)
       // Refresh users list
-      const fetchResponse = await fetch("http://localhost:8080/api/admin/users", {
+      const fetchResponse = await fetch("http://192.168.125.84:8080/api/admin/users", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
@@ -381,7 +381,7 @@ export default function UsersPage() {
 
       const newStatus = targetStatus || (currentStatus === "ACTIVE" ? "BLOCKED" : "ACTIVE")
 
-      const response = await fetch("http://localhost:8080/api/user/status", {
+      const response = await fetch("http://192.168.125.84:8080/api/user/status", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -433,7 +433,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://localhost:8080/api/user/admin-requests/${requestId}/approve`, {
+      const response = await fetch(`http://192.168.125.84:8080/api/user/admin-requests/${requestId}/approve`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -451,7 +451,7 @@ export default function UsersPage() {
         setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
         
         if (activeTab === "history") {
-          const historyResponse = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+          const historyResponse = await fetch("http://192.168.125.84:8080/api/user/admin-requests/history", {
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"
@@ -478,7 +478,7 @@ export default function UsersPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://localhost:8080/api/user/admin-requests/${requestId}/deny`, {
+      const response = await fetch(`http://192.168.125.84:8080/api/user/admin-requests/${requestId}/deny`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -496,7 +496,7 @@ export default function UsersPage() {
         setPendingRequests(pendingRequests.filter(request => request.id !== requestId))
         
         if (activeTab === "history") {
-          const historyResponse = await fetch("http://localhost:8080/api/user/admin-requests/history", {
+          const historyResponse = await fetch("http://192.168.125.84:8080/api/user/admin-requests/history", {
             headers: {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json"

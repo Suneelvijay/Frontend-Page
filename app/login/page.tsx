@@ -50,7 +50,7 @@ export default function LoginPage() {
 
   const handleLogin = async (forceLogin = false) => {
     try {
-      const response = await fetch("http://localhost:8080/api/auth/login", {
+      const response = await fetch("http://192.168.125.84:8080/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -113,7 +113,7 @@ export default function LoginPage() {
   const handleVerifyOTP = async (otp: string) => {
     setIsLoading(true)
     try {
-      const response = await fetch("http://localhost:8080/api/auth/verify-login", {
+      const response = await fetch("http://192.168.125.84:8080/api/auth/verify-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

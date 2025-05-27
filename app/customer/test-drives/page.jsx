@@ -36,7 +36,7 @@ export default function TestDrivesPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://localhost:8080/api/user/test-drive/list", {
+      const response = await fetch("http://192.168.125.84:8080/api/user/test-drive/list", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -91,7 +91,7 @@ export default function TestDrivesPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://localhost:8080/api/user/test-drive/${id}/cancel`, {
+      const response = await fetch(`http://192.168.125.84:8080/api/user/test-drive/${id}/cancel`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${token}`
