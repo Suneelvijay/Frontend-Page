@@ -34,7 +34,7 @@ export default function BookTestDrivePage() {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch(`http://192.168.125.84:8080/api/user/vehicles/${vehicleId}`, {
+        const response = await fetch(`http://192.168.1.19:8080/api/user/vehicles/${vehicleId}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`
@@ -82,7 +82,7 @@ export default function BookTestDrivePage() {
       const [hours, minutes] = time.split(":").map(Number)
       requestedDate.setHours(hours, minutes)
 
-      const response = await fetch("http://192.168.125.84:8080/api/user/test-drive", {
+      const response = await fetch("http://192.168.1.19:8080/api/user/test-drive", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

@@ -41,8 +41,8 @@ export function OTPDialog({ isOpen, email, onClose, onVerify, isLogin = false }:
 
       const response = await fetch(
         isLogin 
-          ? "http://192.168.125.84:8080/api/auth/verify-login"
-          : "http://192.168.125.84:8080/api/auth/verify-email",
+          ? "http://192.168.1.19:8080/api/auth/verify-login"
+          : "http://192.168.1.19:8080/api/auth/verify-email",
         {
           method: "POST",
           headers: {

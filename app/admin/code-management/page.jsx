@@ -23,7 +23,7 @@ export default function CodeManagementPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://192.168.125.84:8080/api/vehicle-types", {
+      const response = await fetch("http://192.168.1.19:8080/api/vehicle-types", {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -61,7 +61,7 @@ export default function CodeManagementPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://192.168.125.84:8080/api/vehicle-types", {
+      const response = await fetch("http://192.168.1.19:8080/api/vehicle-types", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -97,7 +97,7 @@ export default function CodeManagementPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch(`http://192.168.125.84:8080/api/vehicle-types/${id}`, {
+      const response = await fetch(`http://192.168.1.19:8080/api/vehicle-types/${id}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${token}`

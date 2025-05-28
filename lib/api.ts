@@ -3,7 +3,7 @@
  */
 
 // Update API base URL to match the backend server
-const API_BASE_URL = 'http://192.168.125.84:8080/api';
+const API_BASE_URL = 'http://192.168.1.19:8080/api';
 
 // Define common interfaces
 interface LoginCredentials {

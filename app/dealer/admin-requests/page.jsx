@@ -55,7 +55,7 @@ export default function AdminRequestsPage() {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch("http://192.168.125.84:8080/api/user/my-admin-requests", {
+        const response = await fetch("http://192.168.1.19:8080/api/user/my-admin-requests", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -129,7 +129,7 @@ export default function AdminRequestsPage() {
         throw new Error("Authentication required")
       }
 
-      const response = await fetch("http://192.168.125.84:8080/api/user/request-admin-access", {
+      const response = await fetch("http://192.168.1.19:8080/api/user/request-admin-access", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -147,7 +147,7 @@ export default function AdminRequestsPage() {
       setRequestData({ reason: "", durationInDays: 7 })
       
       // Refresh requests list
-      const fetchResponse = await fetch("http://192.168.125.84:8080/api/user/my-admin-requests", {
+      const fetchResponse = await fetch("http://192.168.1.19:8080/api/user/my-admin-requests", {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"

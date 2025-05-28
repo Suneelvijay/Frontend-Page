@@ -59,7 +59,7 @@ export default function AdminLayout({ children }) {
         const token = localStorage.getItem("authToken")
         if (!token) return
 
-        const response = await fetch("http://192.168.125.84:8080/api/admin/menu-config", {
+        const response = await fetch("http://192.168.1.19:8080/api/admin/menu-config", {
           headers: {
             "Authorization": `Bearer ${token}`
           }

@@ -82,7 +82,7 @@ export default function RegisterPage() {
     }
     
     try {
-      const response = await fetch("http://192.168.125.84:8080/api/auth/register", {
+      const response = await fetch("http://192.168.1.19:8080/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

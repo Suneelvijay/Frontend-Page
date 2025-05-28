@@ -20,7 +20,7 @@ export default function VehicleDetailsPage({ params }) {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch(`http://192.168.125.84:8080/api/vehicles/${params.id}`, {
+        const response = await fetch(`http://192.168.1.19:8080/api/vehicles/${params.id}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`

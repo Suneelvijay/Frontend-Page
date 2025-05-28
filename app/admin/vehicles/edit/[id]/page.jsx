@@ -38,7 +38,7 @@ export default function EditVehiclePage({ params }) {
           throw new Error("Authentication required")
         }
 
-        const response = await fetch(`http://192.168.125.84:8080/api/vehicles/${vehicleId}`, {
+        const response = await fetch(`http://192.168.1.19:8080/api/vehicles/${vehicleId}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`
@@ -136,7 +136,7 @@ export default function EditVehiclePage({ params }) {
         formDataToSend.append("image", imageFile)
       }
 
-      const response = await fetch("http://192.168.125.84:8080/api/vehicles/update-with-image", {
+      const response = await fetch("http://192.168.1.19:8080/api/vehicles/update-with-image", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`

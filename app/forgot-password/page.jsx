@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     
     try {
-      const response = await fetch("http://192.168.125.84:8080/api/auth/forgot-password", {
+      const response = await fetch("http://192.168.1.19:8080/api/auth/forgot-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     
     try {
-      const response = await fetch("http://192.168.125.84:8080/api/auth/reset-password", {
+      const response = await fetch("http://192.168.1.19:8080/api/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

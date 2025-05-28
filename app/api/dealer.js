@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.125.84:8080/api/dealer';
+const API_BASE_URL = 'http://192.168.1.19:8080/api/dealer';
 
 // Helper function to get the token
 const getAuthToken = () => {
